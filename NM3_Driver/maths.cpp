@@ -1,11 +1,10 @@
 #include "maths.h"
-#include "chirp.h"
 
 //**************************************************************************************************
 //*** Function to calculate the number of chirps that can fit into a propagation delay
 //**************************************************************************************************
 
-int CalculateChirpNumber(double tao, Chirp chirpinfo) {
+unsigned CalculateChirpNumber(double tao, Chirp chirpinfo) {
 	double epsilon = (double)chirpinfo.GetEpsilonVal();	// cast values to doubles before division
 	double duration = (double)chirpinfo.GetDurationVal();
 	double guard = (double)chirpinfo.GetGuardVal();
@@ -24,6 +23,6 @@ double CounterToMs(unsigned int count, unsigned int clock) {
 //*** Function to convert a time in ms to an int counter of a given clock frequency
 //**************************************************************************************************
 
-int MsToCounter(double ms, unsigned int clock) {
+unsigned MsToCounter(double ms, unsigned int clock) {
 	return (int)(1000.0 * ms * (double)clock);
 }
