@@ -5,9 +5,10 @@
 //*** Chirp class constructor
 //**************************************************************************************************
 
-Chirp::Chirp(char duration, char epsilon, char guard): durationindex_(duration),  
+Chirp::Chirp(char duration, char epsilon, char guard, char type): durationindex_(duration),  
 														epsilon_(epsilon),
-														guardmultiple_(guard){}
+														guardmultiple_(guard),
+														type_(type){}
 
 //**************************************************************************************************
 //*** Function to return the char value for duration index
@@ -20,6 +21,12 @@ char Chirp::GetDurationChar() { return durationindex_; }
 //**************************************************************************************************
 
 char Chirp::GetGuardChar() { return guardmultiple_; }
+
+//**************************************************************************************************
+//*** Function to return the chirp type (U/D)
+//**************************************************************************************************
+
+char Chirp::GetType() { return type_; }
 
 //**************************************************************************************************
 //*** Function to return the duration in ms
