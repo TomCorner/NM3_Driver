@@ -129,6 +129,8 @@
   <ItemGroup>
     <ClCompile Include="chirp.cpp" />
     <ClCompile Include="chirp.h" />
+    <ClCompile Include="io.cpp" />
+    <ClCompile Include="io.h" />
     <ClCompile Include="maths.cpp" />
     <ClCompile Include="modem.cpp" />
     <ClCompile Include="NM3_Driver.cpp" />
