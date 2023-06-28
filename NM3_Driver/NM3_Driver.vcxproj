@@ -127,7 +127,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="chirp.cpp" />
+    <ClCompile Include="chirp.h" />
+    <ClCompile Include="maths.cpp" />
+    <ClCompile Include="modem.cpp" />
     <ClCompile Include="NM3_Driver.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="maths.h" />
+    <ClInclude Include="modem.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
