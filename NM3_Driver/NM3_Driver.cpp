@@ -11,8 +11,31 @@
 
 using namespace std;
 
-int main()
-{
+void Test() {
+    char /*rxbuf[1000],*/ command[100];
+    unsigned address = 2;
+    char message[] = "Hello";
+    unsigned messagelength = 5;
+    int txtime = 12345;
+
+    sprintf_s(command, "$U%03u%02u%s%014u", address, messagelength, message, txtime);  // create command
+
+    wchar_t COMport[4] = { L'C',L'O',L'M',L'3' };   // check COM port in device manager
+    Modem alice(COMport);                 // configure alice
+
+    alice.SendUnicast(2, message, 5);
+
+    //int tao = alice.Ping(2);
+
+    //int systime = alice.SysTimeEnable();
+
+    //char flag;
+    //systime = alice.SysTimeGet(flag);
+
+    //systime = alice.SysTimeDisable();
+}
+
+void Prog() {
     //pass these in as parameters
     wchar_t COMport[4] = { L'C',L'O',L'M',L'3' };   // check COM port in device manager
     char modemtype = 'A';                           // A for Alice, B for Bob
@@ -26,16 +49,28 @@ int main()
     // may need to allow for epsilon to be more than one char... check epsilon
     // if present check duration index and guard are between 0-9 ie 1 char
 
-    Chirp chirpinfo(durationindex, epsilon, guard);
+    Chirp chirpinfo(durationindex, epsilon, guard, 'U');
 
     double test = CounterToMs(4127977, SYSTIMECLOCKHZ);
     int test1 = MsToCounter(test, SYSTIMECLOCKHZ);
 
-    Modem alice(COMport, 9600);                 // configure alice
+    Modem alice(COMport);                 // configure alice
     int propagationtime = alice.Ping(0) / 2;    // retrieve propagation time to bob
 
     if (propagationtime > -1) {              // no errors
 
+
+    }
+}
+
+int main()
+{
+    bool test = 1;
+
+    if (test) {
+        Test();
+    }
+    else {
 
     }
 }
