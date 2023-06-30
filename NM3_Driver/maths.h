@@ -2,7 +2,7 @@
 
 #include "chirp.h"
 
-unsigned CalculateChirpNumber(double tao, Chirp chirpinfo);
+unsigned CalculateChirpRepetitions(double tao, unsigned epsilon, Chirp chirpinfo);
 
 double CounterToMs(unsigned int count, unsigned int clock);
 
