@@ -11,7 +11,7 @@
 class Modem
 {
  public:
-	 Modem(wchar_t port[4]);
+	 Modem(wchar_t portnum);
 
 	 int Ping(unsigned Address);
 
@@ -28,7 +28,8 @@ class Modem
 	 int Probe(unsigned chirpcount, Chirp chirpinfo, int txtime = 0);
 
  private:
-	 wchar_t port_[4] = {L'C', L'O', L'M', L'3'};	// default COM3
+ 
+	 wchar_t port_[9] = {L"\\\\.\\COM4"};	// default COM3
 	 const unsigned long baudrate_ = 9600;				// default 9600	
 
 	 int ConfigureSerial(HANDLE& hCom, DCB& dcb);

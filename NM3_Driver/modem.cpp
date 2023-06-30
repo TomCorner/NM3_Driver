@@ -5,10 +5,8 @@
 //*** Modem class constructor
 //**************************************************************************************************
 
-Modem::Modem(wchar_t port[4]) {
-    for (int i = 0; i < 4; i++) {
-        port_[i] = port[i];
-    }
+Modem::Modem(wchar_t portnum) {    
+    port_[7] = portnum;    
 }
 
 //**************************************************************************************************
@@ -232,7 +230,7 @@ int Modem::SendUnicast(unsigned address, char message[], unsigned messagelength,
     }
 
     CloseHandle(hCom);
-    return 0;
+    return check;
 }
 
 //**************************************************************************************************
@@ -254,8 +252,33 @@ int Modem::SendBroadcast(char message[], unsigned messagelength, int txtime) {
     }
 
 
-    // STUFF
+    unsigned commandlength = 0;
+    if (txtime == 0) {
+        commandlength = 4 + messagelength;
+        sprintf_s(command, "$B%02u%s", messagelength, message);  // create command
+    }
+    else {
+        commandlength = 18 + messagelength;
+        sprintf_s(command, "$B%02u%s%014u", messagelength, message, txtime);  // create command
+    }
+    std::cout << "Command: " << command << "\n";                                    // display command
 
+    SetCommTimeouts(hCom, &localtimeout);                                           //timeouts for local response
+    WriteFile(hCom, command, commandlength, &no_bytes, NULL);                       //send command to modem
+    ReadFile(hCom, rxbuf, 6, &no_bytes, NULL);                                      //read local response
+
+    if ((no_bytes == 6) && (rxbuf[0] == '$') && (rxbuf[1] == 'B')) {
+        PrintChars(&rxbuf[0], no_bytes);
+        check = 0;
+    }
+    else if ((rxbuf[0] == 'E')) {
+        PrintChars(&rxbuf[0], no_bytes);
+        std::cout << "\n*****\nError: Modem given unrecognised command.\n*****\n";
+    }
+    else {
+        std::cout << "\n*****\nError: Modem not connected - check connections and serial port settings.\n*****\n";
+        check = -2;                          //-2 returned when modem not connected
+    }
 
     CloseHandle(hCom);
     return 0;
@@ -293,7 +316,7 @@ int Modem::Probe(unsigned chirpcount, Chirp chirpinfo, int txtime) {
 
 int Modem::ConfigureSerial(HANDLE& hCom, DCB& dcb) {
 
-    hCom = CreateFile(/*port_*/L"\\\\.\\COM3",
+    hCom = CreateFile(port_,
         GENERIC_READ | GENERIC_WRITE, 0,    /* comm devices must be opened w/exclusive-access */
         NULL,                               /* no security attrs */
         OPEN_EXISTING,                      /* comm devices must use OPEN_EXISTING */
