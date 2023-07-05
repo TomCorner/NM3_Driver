@@ -21,11 +21,11 @@ class Modem
 
 	 int SysTimeDisable();
 
-	 int SendUnicast(unsigned Address, char message[], unsigned messagelength, int txtime = 0);
+	 int SendUnicast(unsigned Address, char message[], unsigned messagelength, unsigned txtime = 0);
 
-	 int SendBroadcast(char message[], unsigned messagelength, int txtime = 0);
+	 int SendBroadcast(char message[], unsigned messagelength, unsigned txtime = 0);
 
-	 int Probe(unsigned chirpcount, Chirp chirpinfo, int txtime = 0);
+	 int Probe(unsigned chirprepetitions, Chirp chirpinfo, unsigned txtime = 0);
 
  private:
  

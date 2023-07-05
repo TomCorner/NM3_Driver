@@ -190,7 +190,7 @@ int Modem::SysTimeDisable() {
 //*** Function to send unicast message to given address
 //**************************************************************************************************
 
-int Modem::SendUnicast(unsigned address, char message[], unsigned messagelength, int txtime) {
+int Modem::SendUnicast(unsigned address, char message[], unsigned messagelength, unsigned txtime) {
     //open Serial port
     HANDLE hCom;                                    //serial port stuff
     COMMTIMEOUTS localtimeout = { 0,0,100,0,0 };
@@ -209,8 +209,8 @@ int Modem::SendUnicast(unsigned address, char message[], unsigned messagelength,
         commandlength = 7 + messagelength;
         sprintf_s(command, "$U%03u%02u%s", address, messagelength, message);  // create command
     }else {
-        commandlength = 21 + messagelength;
-        sprintf_s(command, "$U%03u%02u%s%014u", address, messagelength, message, txtime);  // create command
+        commandlength = 22 + messagelength;
+        sprintf_s(command, "$U%03u%02u%sT%014u", address, messagelength, message, txtime);  // create command
     }
     std::cout << "Command: " << command << "\n";                                    // display command
 
@@ -220,7 +220,7 @@ int Modem::SendUnicast(unsigned address, char message[], unsigned messagelength,
 
     if ((no_bytes == 9) && (rxbuf[0] == '$') && (rxbuf[1] == 'U')) {
         PrintChars(&rxbuf[0], no_bytes);
-        check = 0;
+        check = ((0.105 + ((messagelength + 16.0) * 2.0 * 50.0 / 8000.0)) * 1000) + 0.5;
     } else if ((rxbuf[0] == 'E')) {
         PrintChars(&rxbuf[0], no_bytes);
         std::cout << "\n*****\nError: Modem given unrecognised command.\n*****\n";
@@ -237,7 +237,7 @@ int Modem::SendUnicast(unsigned address, char message[], unsigned messagelength,
 //*** Function to send broadcast message
 //**************************************************************************************************
 
-int Modem::SendBroadcast(char message[], unsigned messagelength, int txtime) {
+int Modem::SendBroadcast(char message[], unsigned messagelength, unsigned txtime) {
     //open Serial port
     HANDLE hCom;                                    //serial port stuff
     COMMTIMEOUTS localtimeout = { 0,0,100,0,0 };
@@ -251,15 +251,14 @@ int Modem::SendBroadcast(char message[], unsigned messagelength, int txtime) {
         return serialcheck;
     }
 
-
     unsigned commandlength = 0;
     if (txtime == 0) {
         commandlength = 4 + messagelength;
         sprintf_s(command, "$B%02u%s", messagelength, message);  // create command
     }
     else {
-        commandlength = 18 + messagelength;
-        sprintf_s(command, "$B%02u%s%014u", messagelength, message, txtime);  // create command
+        commandlength = 19 + messagelength;
+        sprintf_s(command, "$B%02u%sT%014u", messagelength, message, txtime);  // create command
     }
     std::cout << "Command: " << command << "\n";                                    // display command
 
@@ -269,7 +268,7 @@ int Modem::SendBroadcast(char message[], unsigned messagelength, int txtime) {
 
     if ((no_bytes == 6) && (rxbuf[0] == '$') && (rxbuf[1] == 'B')) {
         PrintChars(&rxbuf[0], no_bytes);
-        check = 0;
+        check = ((0.105 + ((messagelength + 16.0) * 2.0 * 50.0 / 8000.0)) * 1000) + 0.5;
     }
     else if ((rxbuf[0] == 'E')) {
         PrintChars(&rxbuf[0], no_bytes);
@@ -281,14 +280,14 @@ int Modem::SendBroadcast(char message[], unsigned messagelength, int txtime) {
     }
 
     CloseHandle(hCom);
-    return 0;
+    return check;
 }
 
 //**************************************************************************************************
 //*** Function to send channel probe
 //**************************************************************************************************
 
-int Modem::Probe(unsigned chirpcount, Chirp chirpinfo, int txtime) {
+int Modem::Probe(unsigned chirprepetitions, Chirp chirpinfo, unsigned txtime) {
     //open Serial port
     HANDLE hCom;                                    //serial port stuff
     COMMTIMEOUTS localtimeout = { 0,0,100,0,0 };
@@ -302,12 +301,37 @@ int Modem::Probe(unsigned chirpcount, Chirp chirpinfo, int txtime) {
         return serialcheck;
     }
 
+    unsigned commandlength = 0;
+    if (txtime == 0) {
+        commandlength = 8;
+        sprintf_s(command, "$XP%c%c%02u%c", chirpinfo.GetType(), chirpinfo.GetDurationChar(), chirprepetitions, chirpinfo.GetGuardChar());  // create command
+    }
+    else {
+        commandlength = 23;
+        sprintf_s(command, "$XP%c%c%02u%cT%014u", chirpinfo.GetType(), chirpinfo.GetDurationChar(), chirprepetitions, chirpinfo.GetGuardChar(), txtime);  // create command
+    }
+    std::cout << "Command: " << command << "\n";                                    // display command
 
-    // STUFF
+    SetCommTimeouts(hCom, &localtimeout);                                           //timeouts for local response
+    WriteFile(hCom, command, commandlength, &no_bytes, NULL);                       //send command to modem
+    ReadFile(hCom, rxbuf, 3, &no_bytes, NULL);                                      //read local response
 
+    if ((no_bytes == 3) && (rxbuf[0] == '$') && (rxbuf[1] == 'X') && (rxbuf[2] == 'P')) {
+        PrintChars(&rxbuf[0], no_bytes);
+        unsigned messagelength = 5;
+        check = chirprepetitions * (chirpinfo.GetGuardVal() + chirpinfo.GetDurationVal()) + chirpinfo.GetDurationVal();
+    }
+    else if ((rxbuf[0] == 'E')) {
+        PrintChars(&rxbuf[0], no_bytes);
+        std::cout << "\n*****\nError: Modem given unrecognised command.\n*****\n";
+    }
+    else {
+        std::cout << "\n*****\nError: Modem not connected - check connections and serial port settings.\n*****\n";
+        check = -2;                          //-2 returned when modem not connected
+    }
 
     CloseHandle(hCom);
-    return 0;
+    return check;
 }
 
 //**************************************************************************************************
