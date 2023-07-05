@@ -16,7 +16,7 @@ unsigned CalculateChirpRepetitions(double tao, unsigned epsilon, Chirp chirpinfo
 //**************************************************************************************************
 
 double CounterToMs(unsigned int count, unsigned int clock) {
-	return ((double)count * (1.0 / (double)clock)) / 1000.0;
+	return ((double)count * (1.0 / (double)clock)) * 1000.0;
 }
 
 //**************************************************************************************************
@@ -24,5 +24,5 @@ double CounterToMs(unsigned int count, unsigned int clock) {
 //**************************************************************************************************
 
 unsigned MsToCounter(double ms, unsigned int clock) {
-	return (int)(1000.0 * ms * (double)clock);
+	return (int)((ms * (double)clock)/1000.0);
 }
