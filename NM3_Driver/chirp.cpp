@@ -66,7 +66,7 @@ unsigned short Chirp::GetDurationVal() {
 		duration = 200;
 		break;
 	default:
-		duration = 2;
+		duration = 5;
 		break;
 	}
 	return duration;
