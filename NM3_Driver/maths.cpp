@@ -4,25 +4,26 @@
 //*** Function to calculate the number of chirps that can fit into a propagation delay
 //**************************************************************************************************
 
-unsigned CalculateChirpRepetitions(double tao, unsigned epsilon, Chirp chirpinfo) {
+uint16_t CalculateChirpRepetitions(double tao, uint16_t epsilon, Chirp chirpinfo) {
 	double eps = (double)epsilon;	// cast values to doubles before division
 	double duration = (double)chirpinfo.GetDurationVal();
 	double guard = (double)chirpinfo.GetGuardVal();
-	return (int)((tao - eps - duration) / (duration + guard));	// cast back to int as can only have an integer number of chirps
+	uint16_t n_repititions = (uint16_t)((tao - eps - duration) / (duration + guard)); // calculate number of repitions using decided formula
+	return (n_repititions > 99) ? (uint16_t)99 : n_repititions;	// return number of repitions, capped at 99
 }
 
 //**************************************************************************************************
-//*** Function to convert an int counter of a given clock frequency to time in ms
+//*** Function to convert an int64_t counter of a given clock frequency to time in ms
 //**************************************************************************************************
 
-double CounterToMs(unsigned int count, unsigned int clock) {
+double CounterToMs(uint64_t count, uint64_t clock) {
 	return ((double)count * (1.0 / (double)clock)) * 1000.0;
 }
 
 //**************************************************************************************************
-//*** Function to convert a time in ms to an int counter of a given clock frequency
+//*** Function to convert a time in ms to an int64_t counter of a given clock frequency
 //**************************************************************************************************
 
-unsigned MsToCounter(double ms, unsigned int clock) {
+uint64_t MsToCounter(double ms, uint64_t clock) {
 	return (int)((ms * (double)clock)/1000.0);
 }

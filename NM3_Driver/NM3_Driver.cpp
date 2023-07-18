@@ -4,8 +4,8 @@
 #define SYSTIMECLOCKHZ 1000000 // sys time clock at 1MHz
 #define PROPTIMECOUNTHZ 16000 // propagation time is a 16kHz counter
 
-const unsigned alicedelayms = 500;    // in ms
-const unsigned bobdelayms = 1500;      // in ms
+#define ALICEDELAYMS 500    // in ms
+#define BOBDELAYMS 1500     // in ms
 
 #include <iostream>
 #include "modem.h"
@@ -18,11 +18,11 @@ const unsigned bobdelayms = 1500;      // in ms
 using namespace std;
 using namespace std::chrono;
 
-int Alice() {
+int64_t Alice() {
     //pass these in as parameters
     wchar_t COMportnum = L'3';   // check COM port in device manager
     char modemtype = 'A';                           // A for Alice, B for Bob
-    unsigned epsilon = 5;                             // local ring down guard time in ms (default 5)
+    uint16_t epsilon = 5;                             // local ring down guard time in ms (default 5)
 
     // these parameters are optional
     char chirpdurationindex = '0';                       // duration index - see chirp.cpp for values (default 1)
@@ -31,15 +31,15 @@ int Alice() {
 
     Chirp chirpinfo(chirpdurationindex, chirpguardindex, chirptype);
 
-    unsigned bobaddress = 2;            // Bobs address
+    uint16_t bobaddress = 2;            // Bobs address
     char messagebob[64];                // unicast configuration message to bob
-    unsigned messagelength = 0;
+    uint16_t messagelength = 0;
 
     Modem alice(COMportnum);                 // configure alice
     char systimeflag = 'D';                  // 'E' for enabled or 'D' for disabled
 
     // ****** enable or clear system time 
-    int  systime = alice.SysTimeGet(systimeflag);
+    int64_t  systime = alice.SysTimeGet(systimeflag);
     if (systime < 0) {
         return -1;
     }
@@ -54,7 +54,7 @@ int Alice() {
     }
 
     // ****** Ping bob
-    int twowaytimecount = alice.Ping(bobaddress);
+    int64_t twowaytimecount = alice.Ping(bobaddress);
     if (twowaytimecount < 0) {
         return -1;
     }
@@ -62,7 +62,7 @@ int Alice() {
     if (twowaytimecount > 0) {
         onewaytimems = CounterToMs(twowaytimecount, PROPTIMECOUNTHZ) / 2.0;
     }
-    unsigned nrepetitions = CalculateChirpRepetitions(onewaytimems, epsilon, chirpinfo);
+    uint16_t nrepetitions = CalculateChirpRepetitions(onewaytimems, epsilon, chirpinfo);
 
     // ****** prepare Chirp message
     if (chirptype == 'U' || chirptype == 'u') {
@@ -80,21 +80,21 @@ int Alice() {
     if (systime < 0) {
         return -1;
     }
-    unsigned unicasttxtime = systime + MsToCounter(alicedelayms, SYSTIMECLOCKHZ);
+    uint64_t unicasttxtime = systime + MsToCounter(ALICEDELAYMS, SYSTIMECLOCKHZ);
 
     // ****** schedule chirp info message to bob
-    int txdurationms = alice.UnicastWithAck(bobaddress, messagebob, messagelength); // add time later...
+    int64_t txdurationms = alice.UnicastWithAck(bobaddress, messagebob, messagelength); // add time later...
     if (txdurationms < 0) {
         return -1;
     }
-    unsigned probetxtime = unicasttxtime + MsToCounter(onewaytimems, SYSTIMECLOCKHZ) + MsToCounter(bobdelayms + 30, SYSTIMECLOCKHZ);
+    uint64_t probetxtime = unicasttxtime + MsToCounter(onewaytimems, SYSTIMECLOCKHZ) + MsToCounter(BOBDELAYMS + 30, SYSTIMECLOCKHZ);
 
     // ****** Schedule probe signal to bob    
     txdurationms = alice.Probe(nrepetitions, chirpinfo, probetxtime);
     if (txdurationms < 0) {
         return -1;
     }    
-    std::this_thread::sleep_for(std::chrono::milliseconds(alicedelayms + txdurationms)); // wait for probe to be sent
+    std::this_thread::sleep_for(std::chrono::milliseconds(ALICEDELAYMS + txdurationms)); // wait for probe to be sent
 
     // ****** disable system time
     systime = alice.SysTimeDisable(systimeflag);
@@ -104,17 +104,17 @@ int Alice() {
     return 0;
 }
 
-int Bob() {
+int64_t Bob() {
     //pass these in as parameters
     wchar_t COMportnum = L'6';   // check COM port in device manager
     char modemtype = 'B';                           // A for Alice, B for Bob
-    unsigned epsilon = 5;                             // local ring down guard time in ms (default 5)
+    //uint16_t epsilon = 5;                             // local ring down guard time in ms (default 5)
 
     // these parameters are optional (Bob gets them from ALice)
     char chirpdurationindex = '1';                       // duration index - see chirp.cpp for values (default 1)
     char chirpguardindex = '1';                          // guard index - see chirp.cpp for values    (default 1)
     char chirptype = 'D';                                // Alice up (U), bob down (D)
-    unsigned nrepetitions = 0;
+    uint16_t nrepetitions = 0;
 
     //Chirp chirpinfo(chirpdurationindex, chirpguardindex, chirptype);
 
@@ -122,7 +122,7 @@ int Bob() {
     char systimeflag = 'D';                  // 'E' for enabled or 'D' for disabled
 
     // ****** enable or clear system time 
-    int  systime = bob.SysTimeGet(systimeflag);
+    int64_t  systime = bob.SysTimeGet(systimeflag);
     if (systime < 0) {
         return -1;
     }
@@ -139,18 +139,18 @@ int Bob() {
     // ****** wait for chirp info from Alice and parse message
     char rxmessage[1000];
     systime = bob.UnicastListen(rxmessage);
-    sscanf_s(rxmessage, "%c%c%2u%c", &chirptype, 1, &chirpdurationindex, 1, &nrepetitions, &chirpguardindex, 1);
+    sscanf_s(rxmessage, "%c%c%2hu%c", &chirptype, 1, &chirpdurationindex, 1, &nrepetitions, &chirpguardindex, 1);
     Chirp chirpinfo(chirpdurationindex, chirpguardindex, chirptype);
 
     // ****** Schedule probe signal to Alice
-    unsigned probetxtime = systime + MsToCounter(bobdelayms, SYSTIMECLOCKHZ);
+    uint64_t probetxtime = systime + MsToCounter(BOBDELAYMS, SYSTIMECLOCKHZ);
 
-    //int testsystime = bob.SysTimeGet(systimeflag);
-    int txdurationms = bob.Probe(nrepetitions, chirpinfo, probetxtime);
+    //int64_t testsystime = bob.SysTimeGet(systimeflag);
+    int64_t txdurationms = bob.Probe(nrepetitions, chirpinfo, probetxtime);
     if (txdurationms < 0) {
         return -1;
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(bobdelayms + txdurationms)); // wait for probe to be sent
+    std::this_thread::sleep_for(std::chrono::milliseconds(BOBDELAYMS + txdurationms)); // wait for probe to be sent
 
     // ****** disable system time
     systime = bob.SysTimeDisable(systimeflag);
@@ -167,7 +167,7 @@ void Test() {
     duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
     double diff = time_span.count();
 
-    int stop = 0;
+    int64_t stop = 0;
 }
 
 int main()
@@ -178,7 +178,7 @@ int main()
         Test();
     }
     else {
-        int err = Bob();
+        int64_t err = Bob();
         if (err < 0) {
             std::cout << "\n**** Error in execution. See above messages for clarification ****\n";
         }

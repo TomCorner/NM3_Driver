@@ -2,4 +2,4 @@
 
 #include <iostream>
 
-void PrintChars(char* start, unsigned length);
+void PrintChars(char* start, uint64_t length);

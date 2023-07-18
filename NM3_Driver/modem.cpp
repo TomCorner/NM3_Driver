@@ -13,16 +13,16 @@ Modem::Modem(wchar_t portnum) {
 //*** Function to get a 2-way propagation time (ping) from Nanomodem
 //**************************************************************************************************
 
-int Modem::Ping(unsigned address) {
+int64_t Modem::Ping(uint16_t address) {
     //open Serial port
     HANDLE hCom;                                                                    //serial port stuff
     COMMTIMEOUTS localtimeout = { 0,0,100,0,0 }, remotetimeout = { 0,0,4500,0,0 };
     DCB dcb;
 
     char rxbuf[1000], command[100];            // define rx and command buffers
-    unsigned long no_bytes = 0;
-    unsigned TmpAddress;
-    int propagation = -1;                             //returns -1 if no range measured (timed out)
+    DWORD no_bytes = 0;
+    uint16_t TmpAddress;
+    int64_t propagation = -1;                             //returns -1 if no range measured (timed out)
 
     propagation = ConfigureSerial(hCom, dcb);
     if (propagation < 0) { // configure serial port, checks for connection errors
@@ -45,7 +45,7 @@ int Modem::Ping(unsigned address) {
         if ((no_bytes == 13) && (rxbuf[0] == '#') && (rxbuf[1] == 'R') && (rxbuf[5] == 'T') && (rxbuf[11] == '\r') && (rxbuf[12] == '\n')) { // check acoustic response is correct format
             PrintChars(&rxbuf[0], no_bytes);
             //decode packet
-            sscanf_s(rxbuf, "#R%3uT%5u\r\n", &TmpAddress, &propagation);    // retrieve adress and propagation time from acknowledgement
+            sscanf_s(rxbuf, "#R%3huT%5llu\r\n", &TmpAddress, &propagation);    // retrieve adress and propagation time from acknowledgement
             if (TmpAddress != address) propagation = -1;                    // incorrect address
         }
         else {                                  // no acoustic response - timeout
@@ -68,7 +68,7 @@ int Modem::Ping(unsigned address) {
 //*** Function to enable modems system time
 //**************************************************************************************************
 
-int Modem::SysTimeEnable(char& flag) {
+int64_t Modem::SysTimeEnable(char& flag) {
     return SysTimeCommon(flag, 'E');
 }
 
@@ -76,7 +76,7 @@ int Modem::SysTimeEnable(char& flag) {
 //*** Function to get modems system time - flag indicates with system time is enabled or diabled
 //**************************************************************************************************
 
-int Modem::SysTimeGet(char& flag) {
+int64_t Modem::SysTimeGet(char& flag) {
     return SysTimeCommon(flag, 'G');
 }
 
@@ -84,7 +84,7 @@ int Modem::SysTimeGet(char& flag) {
 //*** Function to disable modems system time
 //**************************************************************************************************
 
-int Modem::SysTimeDisable(char& flag) {
+int64_t Modem::SysTimeDisable(char& flag) {
     return SysTimeCommon(flag, 'D');
 }
 
@@ -92,7 +92,7 @@ int Modem::SysTimeDisable(char& flag) {
 //*** Function to clear modems system time
 //**************************************************************************************************
 
-int Modem::SysTimeClear(char& flag) {
+int64_t Modem::SysTimeClear(char& flag) {
     return SysTimeCommon(flag, 'C');
 }
 
@@ -100,28 +100,28 @@ int Modem::SysTimeClear(char& flag) {
 //*** Function to send unicast message to given address
 //**************************************************************************************************
 
-int Modem::Unicast(unsigned address, char message[], unsigned messagelength, unsigned txtime) {
+int64_t Modem::Unicast(uint16_t address, char message[], uint16_t messagelength, uint64_t txtime) {
     //open Serial port
     HANDLE hCom;                                    //serial port stuff
     COMMTIMEOUTS localtimeout = { 0,0,100,0,0 };
     DCB dcb;
 
     char rxbuf[1000], command[100];            // define rx and command buffers
-    unsigned long no_bytes = 0;
-    int txduration = -1;                             //returns -1 if no time measured (timed out)
+    DWORD no_bytes = 0;
+    int64_t txduration = -1;                             //returns -1 if no time measured (timed out)
 
     txduration = ConfigureSerial(hCom, dcb);
     if (txduration < 0) { // configure serial port, checks for connection errors
         return txduration;
     }
 
-    unsigned commandlength = 0;
+    DWORD commandlength = 0;
     if (txtime == 0) {
         commandlength = 7 + messagelength;
         sprintf_s(command, "$U%03u%02u%s", address, messagelength, message);  // create command
     }else {
         commandlength = 22 + messagelength;
-        sprintf_s(command, "$U%03u%02u%sT%014u", address, messagelength, message, txtime);  // create command
+        sprintf_s(command, "$U%03u%02u%sT%014llu", address, messagelength, message, txtime);  // create command
     }
     std::cout << "Command: " << command << "\n";                                    // display command
 
@@ -131,7 +131,7 @@ int Modem::Unicast(unsigned address, char message[], unsigned messagelength, uns
 
     if ((no_bytes == 9) && (rxbuf[0] == '$') && (rxbuf[1] == 'U')) {
         PrintChars(&rxbuf[0], no_bytes);
-        txduration = (int)((0.105 + ((messagelength + 16.0) * 2.0 * 50.0 / 8000.0)) * 1000) + 0.5;
+        txduration = int(((0.105 + ((messagelength + 16.0) * 2.0 * 50.0 / 8000.0)) * 1000) + 0.5);
     } else if ((rxbuf[0] == 'E')) {
         PrintChars(&rxbuf[0], no_bytes);
         std::cout << "\n*****\nError: Modem given unrecognised command.\n*****\n";
@@ -149,30 +149,30 @@ int Modem::Unicast(unsigned address, char message[], unsigned messagelength, uns
 //*** Function to send unicast message to given address and wait for an acknowledgement
 //**************************************************************************************************
 
-int Modem::UnicastWithAck(unsigned address, char message[], unsigned messagelength, unsigned txtime) {
+int64_t Modem::UnicastWithAck(uint16_t address, char message[], uint16_t messagelength, uint64_t txtime) {
     //open Serial port
     HANDLE hCom;                                                                    //serial port stuff
     COMMTIMEOUTS localtimeout = { 0,0,100,0,0 }, remotetimeout = { 0,0,4500,0,0 };
     DCB dcb;
 
     char rxbuf[1000], command[100];            // define rx and command buffers
-    unsigned long no_bytes = 0;
-    unsigned TmpAddress;
-    int propagation = -1;                             //returns -1 if no time measured (timed out)
+    DWORD no_bytes = 0;
+    uint16_t TmpAddress;
+    int64_t propagation = -1;                             //returns -1 if no time measured (timed out)
 
     propagation = ConfigureSerial(hCom, dcb);
     if (propagation < 0) { // configure serial port, checks for connection errors
         return propagation;
     }
 
-    unsigned commandlength = 0;
+    DWORD commandlength = 0;
     if (txtime == 0) {
         commandlength = 7 + messagelength;
         sprintf_s(command, "$M%03u%02u%s", address, messagelength, message);  // create command
     }
     else {
         commandlength = 22 + messagelength;
-        sprintf_s(command, "$M%03u%02u%sT%014u", address, messagelength, message, txtime);  // create command
+        sprintf_s(command, "$M%03u%02u%sT%014llu", address, messagelength, message, txtime);  // create command
     }
     std::cout << "Command: " << command << "\n";                                    // display command
 
@@ -189,7 +189,7 @@ int Modem::UnicastWithAck(unsigned address, char message[], unsigned messageleng
         if ((no_bytes == 13) && (rxbuf[0] == '#') && (rxbuf[1] == 'R') && (rxbuf[5] == 'T') && (rxbuf[11] == '\r') && (rxbuf[12] == '\n')) { // check acoustic response is correct format
             PrintChars(&rxbuf[0], no_bytes);
             //decode packet
-            sscanf_s(rxbuf, "#R%3uT%5u\r\n", &TmpAddress, &propagation);    // retrieve adress and propagation time from acknowledgement
+            sscanf_s(rxbuf, "#R%3huT%5llu\r\n", &TmpAddress, &propagation);    // retrieve adress and propagation time from acknowledgement
             if (TmpAddress != address) propagation = -1;                    // incorrect address
         }
         else {                                  // no acoustic response - timeout
@@ -214,29 +214,29 @@ int Modem::UnicastWithAck(unsigned address, char message[], unsigned messageleng
 //*** Function to send broadcast message
 //**************************************************************************************************
 
-int Modem::Broadcast(char message[], unsigned messagelength, unsigned txtime) {
+int64_t Modem::Broadcast(char message[], uint16_t messagelength, uint64_t txtime) {
     //open Serial port
     HANDLE hCom;                                    //serial port stuff
     COMMTIMEOUTS localtimeout = { 0,0,100,0,0 };
     DCB dcb;
 
     char rxbuf[1000], command[100];            // define rx and command buffers
-    unsigned long no_bytes = 0;
-    int txduration = -1;                             //returns -1 if no time measured (timed out)
+    DWORD no_bytes = 0;
+    int64_t txduration = -1;                             //returns -1 if no time measured (timed out)
 
     txduration = ConfigureSerial(hCom, dcb);
     if (txduration < 0) { // configure serial port, checks for connection errors
         return txduration;
     }
 
-    unsigned commandlength = 0;
+    DWORD commandlength = 0;
     if (txtime == 0) {
         commandlength = 4 + messagelength;
         sprintf_s(command, "$B%02u%s", messagelength, message);  // create command
     }
     else {
         commandlength = 19 + messagelength;
-        sprintf_s(command, "$B%02u%sT%014u", messagelength, message, txtime);  // create command
+        sprintf_s(command, "$B%02u%sT%014llu", messagelength, message, txtime);  // create command
     }
     std::cout << "Command: " << command << "\n";                                    // display command
 
@@ -246,7 +246,7 @@ int Modem::Broadcast(char message[], unsigned messagelength, unsigned txtime) {
 
     if ((no_bytes == 6) && (rxbuf[0] == '$') && (rxbuf[1] == 'B')) {
         PrintChars(&rxbuf[0], no_bytes);
-        txduration = (int)((0.105 + ((messagelength + 16.0) * 2.0 * 50.0 / 8000.0)) * 1000) + 0.5;
+        txduration = int(((0.105 + ((messagelength + 16.0) * 2.0 * 50.0 / 8000.0)) * 1000) + 0.5);        
     }
     else if ((rxbuf[0] == 'E')) {
         PrintChars(&rxbuf[0], no_bytes);
@@ -266,29 +266,29 @@ int Modem::Broadcast(char message[], unsigned messagelength, unsigned txtime) {
 //*** Function to send channel probe
 //**************************************************************************************************
 
-int Modem::Probe(unsigned chirprepetitions, Chirp chirpinfo, unsigned txtime) {
+int64_t Modem::Probe(uint16_t chirprepetitions, Chirp chirpinfo, uint64_t txtime) {
     //open Serial port
     HANDLE hCom;                                    //serial port stuff
     COMMTIMEOUTS localtimeout = { 0,0,100,0,0 };
     DCB dcb;
 
     char rxbuf[1000], command[100];            // define rx and command buffers
-    unsigned long no_bytes = 0;
-    int txduration = -1;                             //returns -1 if no time measured (timed out)
+    DWORD no_bytes = 0;
+    int64_t txduration = -1;                             //returns -1 if no time measured (timed out)
 
     txduration = ConfigureSerial(hCom, dcb);
     if (txduration < 0) { // configure serial port, checks for connection errors
         return txduration;
     }
 
-    unsigned commandlength = 0;
+    DWORD commandlength = 0;
     if (txtime == 0) {
         commandlength = 8;
         sprintf_s(command, "$XP%c%c%02u%c", chirpinfo.GetType(), chirpinfo.GetDurationChar(), chirprepetitions, chirpinfo.GetGuardChar());  // create command
     }
     else {
         commandlength = 23;
-        sprintf_s(command, "$XP%c%c%02u%cT%014u", chirpinfo.GetType(), chirpinfo.GetDurationChar(), chirprepetitions, chirpinfo.GetGuardChar(), txtime);  // create command
+        sprintf_s(command, "$XP%c%c%02u%cT%014llu", chirpinfo.GetType(), chirpinfo.GetDurationChar(), chirprepetitions, chirpinfo.GetGuardChar(), txtime);  // create command
     }
     std::cout << "Command: " << command << "\n";                                    // display command
 
@@ -298,7 +298,6 @@ int Modem::Probe(unsigned chirprepetitions, Chirp chirpinfo, unsigned txtime) {
 
     if ((no_bytes == 5) && (rxbuf[0] == '$') && (rxbuf[1] == 'X') && (rxbuf[2] == 'P')) {
         PrintChars(&rxbuf[0], no_bytes);
-        unsigned messagelength = 5;
         txduration = chirprepetitions * (chirpinfo.GetGuardVal() + chirpinfo.GetDurationVal()) + chirpinfo.GetDurationVal();
     }
     else if ((rxbuf[0] == 'E')) {
@@ -319,17 +318,17 @@ int Modem::Probe(unsigned chirprepetitions, Chirp chirpinfo, unsigned txtime) {
 //*** Function to listen for unicast messages
 //**************************************************************************************************
 
-int Modem::UnicastListen(char* message) {
+int64_t Modem::UnicastListen(char* message) {
     //open Serial port
     HANDLE hCom;                                    //serial port stuff
     COMMTIMEOUTS localtimeout = { 0,0,60000,0,0 };  // listen timesout after a minute
     DCB dcb;
 
     char rxbuf[1000];            // define rx buffer
-    unsigned long no_bytes = 0;
-    int rxtime = -1;             //returns -1 if no time measured (timed out)
+    DWORD no_bytes = 0;
+    int64_t rxtime = -1;             //returns -1 if no time measured (timed out)
 
-    int serialcheck = ConfigureSerial(hCom, dcb);
+    int64_t serialcheck = ConfigureSerial(hCom, dcb);
     if (serialcheck < 0) { // configure serial port, checks for connection errors
         return serialcheck;
     }
@@ -340,9 +339,9 @@ int Modem::UnicastListen(char* message) {
     if ((rxbuf[0] == '#') && (rxbuf[1] == 'U') && (rxbuf[2] == '0') && (rxbuf[3] == '5')) {
         PrintChars(&rxbuf[0], no_bytes);
         //decode packet
-        unsigned messagelength = 6; // expected length + terminating char
+        uint16_t messagelength = 6; // expected length + terminating char
         if (rxbuf[9] == 'T') {
-            sscanf_s(rxbuf, "#U05%[^T]T%14u\r\n", message, messagelength, &rxtime);
+            sscanf_s(rxbuf, "#U05%[^T]T%14llu\r\n", message, messagelength, &rxtime);
         }
         else {
             sscanf_s(rxbuf, "#U05%s\r\n", message, messagelength);
@@ -362,7 +361,7 @@ int Modem::UnicastListen(char* message) {
 //*** Function to configure serial port (common across modem commands)
 //**************************************************************************************************
 
-int Modem::ConfigureSerial(HANDLE& hCom, DCB& dcb) {
+int64_t Modem::ConfigureSerial(HANDLE& hCom, DCB& dcb) {
 
     hCom = CreateFile(port_,
         GENERIC_READ | GENERIC_WRITE, 0,    /* comm devices must be opened w/exclusive-access */
@@ -401,15 +400,15 @@ int Modem::ConfigureSerial(HANDLE& hCom, DCB& dcb) {
 //*** Function to send modem required system time command
 //**************************************************************************************************
 
-int Modem::SysTimeCommon(char& flag, char commandchar) {
+int64_t Modem::SysTimeCommon(char& flag, char commandchar) {
     //open Serial port
     HANDLE hCom;                                    //serial port stuff
     COMMTIMEOUTS localtimeout = { 0,0,100,0,0 };
     DCB dcb;
 
     char rxbuf[1000], commandstring[100];            // define rx and command buffers
-    unsigned long no_bytes = 0;
-    int systime = -1;                             //returns -1 if no time measured (timed out)
+    DWORD no_bytes = 0;
+    int64_t systime = -1;                             //returns -1 if no time measured (timed out)
 
     systime = ConfigureSerial(hCom, dcb);
     if (systime < 0) { // configure serial port, checks for connection errors
@@ -425,7 +424,7 @@ int Modem::SysTimeCommon(char& flag, char commandchar) {
 
     if ((no_bytes == 20) && (rxbuf[0] == '#') && (rxbuf[1] == 'X') && (rxbuf[2] == 'T') && (rxbuf[18] == '\r') && (rxbuf[19] == '\n')) { // check local response is correct format
         PrintChars(&rxbuf[0], no_bytes);
-        sscanf_s(rxbuf, "#XT%c%14u\r\n", &flag, 1, &systime);      //retrieve time from local response
+        sscanf_s(rxbuf, "#XT%c%14llu\r\n", &flag, 1, &systime);      //retrieve time from local response
     }
     else if ((rxbuf[0] == 'E')) {
         PrintChars(&rxbuf[0], no_bytes);

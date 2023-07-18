@@ -2,8 +2,8 @@
 
 #include "chirp.h"
 
-unsigned CalculateChirpRepetitions(double tao, unsigned epsilon, Chirp chirpinfo);
+uint16_t CalculateChirpRepetitions(double tao, uint16_t epsilon, Chirp chirpinfo);
 
-double CounterToMs(unsigned int count, unsigned int clock);
+double CounterToMs(uint64_t count, uint64_t clock);
 
-unsigned MsToCounter(double ms, unsigned int clock);
+uint64_t MsToCounter(double ms, uint64_t clock);
