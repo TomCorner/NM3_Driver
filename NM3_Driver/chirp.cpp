@@ -31,8 +31,8 @@ char Chirp::GetType() { return type_; }
 //*** Function to return the duration in ms
 //**************************************************************************************************
 
-unsigned short Chirp::GetDurationVal() {
-	unsigned short duration;
+uint16_t Chirp::GetDurationVal() {
+	uint16_t duration;
 	switch (durationindex_)
 	{
 	case '0':
@@ -76,8 +76,8 @@ unsigned short Chirp::GetDurationVal() {
 //*** Function to return the guard time in ms
 //**************************************************************************************************
 
-unsigned short Chirp::GetGuardVal() {
-	unsigned short guard;
+uint16_t Chirp::GetGuardVal() {
+	uint16_t guard;
 	switch (guard_)
 	{
 	case '0':
