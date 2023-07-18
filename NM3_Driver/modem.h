@@ -23,9 +23,11 @@ class Modem
 
 	 int SysTimeClear(char& flag);
 
-	 int SendUnicast(unsigned Address, char message[], unsigned messagelength, unsigned txtime = 0);
+	 int Unicast(unsigned Address, char message[], unsigned messagelength, unsigned txtime = 0);
 
-	 int SendBroadcast(char message[], unsigned messagelength, unsigned txtime = 0);
+	 int UnicastWithAck(unsigned Address, char message[], unsigned messagelength, unsigned txtime = 0);
+
+	 int Broadcast(char message[], unsigned messagelength, unsigned txtime = 0);
 
 	 int Probe(unsigned chirprepetitions, Chirp chirpinfo, unsigned txtime = 0);
 
