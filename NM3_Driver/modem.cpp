@@ -384,7 +384,6 @@ int64_t Modem::SysTimeCommon(char& flag, char commandchar) {
 int64_t Modem::ErrorCheck(int64_t numbytes) {
 	int64_t result;
 	if (rxbuf_[0] == 'E') {
-		PrintChars(&rxbuf_[0], numbytes);
 		result = ENM3CommandErr;
 	}
 	else if (numbytes == 0) {
