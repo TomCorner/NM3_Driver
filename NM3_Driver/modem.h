@@ -55,4 +55,6 @@ private:
 	int64_t ConfigureSerial(HANDLE& hCom, DCB& dcb);
 
 	int64_t SysTimeCommon(char& flag, char commandchar);
+
+	int64_t ErrorCheck(char firstbyte, int64_t numbytes);
 };

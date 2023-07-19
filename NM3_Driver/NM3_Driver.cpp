@@ -39,14 +39,7 @@ int64_t Alice() {
 	char systimeflag = 'D';                  // 'E' for enabled or 'D' for disabled
 
 	// ****** enable or clear system time 
-	int64_t  systime = alice.SysTimeGet(systimeflag);
-	if (systime < 0) return systime;
-	if (systimeflag == 'D') {
-		systime = alice.SysTimeEnable(systimeflag);
-	}
-	else {
-		systime = alice.SysTimeClear(systimeflag);
-	}
+	int64_t systime = alice.SysTimeEnable(systimeflag);
 	if (systime < 0) return systime;
 
 	// ****** Ping bob
@@ -106,14 +99,7 @@ int64_t Bob() {
 	char systimeflag = 'D';                // 'E' for enabled or 'D' for disabled
 
 	// ****** enable or clear system time 
-	int64_t  systime = bob.SysTimeGet(systimeflag);
-	if (systime < 0) return systime;
-	if (systimeflag == 'D') {
-		systime = bob.SysTimeEnable(systimeflag);
-	}
-	else {
-		systime = bob.SysTimeClear(systimeflag);
-	}
+	int64_t systime = bob.SysTimeEnable(systimeflag);	
 	if (systime < 0) return systime;
 
 	// ****** wait for chirp info from Alice and parse message

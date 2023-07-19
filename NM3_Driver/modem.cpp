@@ -53,18 +53,8 @@ int64_t Modem::Ping(uint16_t address) {
 			PrintChars(&rxbuf[0], no_bytes);
 		}
 	}
-	else if ((rxbuf[0] == 'E')) {
-		PrintChars(&rxbuf[0], no_bytes);
-		std::cout << "\n*****\nError: Modem given unrecognised command.\n*****\n";
-		propagation = ENM3CommandErr;
-	}
-	else if (no_bytes == 0) {
-		std::cout << "\n*****\nError: Timed out waiting for modem response.\n*****\n";
-		propagation = ENM3TimeoutErr;
-	}
 	else {
-		std::cout << "\n*****\nError: Modem received unexpected message.\n*****\n";
-		propagation = ENM3UnexpectedErr;
+		propagation = ErrorCheck(rxbuf[0], no_bytes);
 	}
 
 	CloseHandle(hCom);
@@ -76,7 +66,16 @@ int64_t Modem::Ping(uint16_t address) {
 //**************************************************************************************************
 
 int64_t Modem::SysTimeEnable(char& flag) {
-	return SysTimeCommon(flag, 'E');
+	int64_t  systime = SysTimeGet(flag);
+	if (systime < 0) return systime;
+	if (flag == 'D') {
+		systime = SysTimeCommon(flag, 'E');
+	}
+	else {
+		systime = SysTimeClear(flag);
+	}
+	//if (systime < 0) return systime;
+	return systime;
 }
 
 //**************************************************************************************************
@@ -142,18 +141,8 @@ int64_t Modem::Unicast(uint16_t address, char message[], uint16_t messagelength,
 		PrintChars(&rxbuf[0], no_bytes);
 		txduration = int(((0.105 + ((messagelength + 16.0) * 2.0 * 50.0 / 8000.0)) * 1000) + 0.5);
 	}
-	else if ((rxbuf[0] == 'E')) {
-		PrintChars(&rxbuf[0], no_bytes);
-		std::cout << "\n*****\nError: Modem given unrecognised command.\n*****\n";
-		txduration = ENM3CommandErr;
-	}
-	else if (no_bytes == 0) {
-		std::cout << "\n*****\nError: Timed out waiting for modem response.\n*****\n";
-		txduration = ENM3TimeoutErr;
-	}
 	else {
-		std::cout << "\n*****\nError: Modem received unexpected message.\n*****\n";
-		txduration = ENM3UnexpectedErr;
+		txduration = ErrorCheck(rxbuf[0], no_bytes);
 	}
 
 	CloseHandle(hCom);
@@ -212,18 +201,8 @@ int64_t Modem::UnicastWithAck(uint16_t address, char message[], uint16_t message
 			PrintChars(&rxbuf[0], no_bytes);
 		}
 	}
-	else if ((rxbuf[0] == 'E')) {
-		PrintChars(&rxbuf[0], no_bytes);
-		std::cout << "\n*****\nError: Modem given unrecognised command.\n*****\n";
-		propagation = ENM3CommandErr;
-	}
-	else if (no_bytes == 0) {
-		std::cout << "\n*****\nError: Timed out waiting for modem response.\n*****\n";
-		propagation = ENM3TimeoutErr;
-	}
 	else {
-		std::cout << "\n*****\nError: Modem received unexpected message.\n*****\n";
-		propagation = ENM3UnexpectedErr;
+		propagation = ErrorCheck(rxbuf[0], no_bytes);
 	}
 
 	CloseHandle(hCom);
@@ -269,18 +248,8 @@ int64_t Modem::Broadcast(char message[], uint16_t messagelength, uint64_t txtime
 		PrintChars(&rxbuf[0], no_bytes);
 		txduration = int(((0.105 + ((messagelength + 16.0) * 2.0 * 50.0 / 8000.0)) * 1000) + 0.5);
 	}
-	else if ((rxbuf[0] == 'E')) {
-		PrintChars(&rxbuf[0], no_bytes);
-		std::cout << "\n*****\nError: Modem given unrecognised command.\n*****\n";
-		txduration = ENM3CommandErr;
-	}
-	else if (no_bytes == 0) {
-		std::cout << "\n*****\nError: Timed out waiting for modem response.\n*****\n";
-		txduration = ENM3TimeoutErr;
-	}
 	else {
-		std::cout << "\n*****\nError: Modem received unexpected message.\n*****\n";
-		txduration = ENM3UnexpectedErr;
+		txduration = ErrorCheck(rxbuf[0], no_bytes);
 	}
 
 	CloseHandle(hCom);
@@ -326,18 +295,8 @@ int64_t Modem::Probe(uint16_t chirprepetitions, Chirp chirpinfo, uint64_t txtime
 		PrintChars(&rxbuf[0], no_bytes);
 		txduration = chirprepetitions * (chirpinfo.GetGuardVal() + chirpinfo.GetDurationVal()) + chirpinfo.GetDurationVal();
 	}
-	else if ((rxbuf[0] == 'E')) {
-		PrintChars(&rxbuf[0], no_bytes);
-		std::cout << "\n*****\nError: Modem given unrecognised command.\n*****\n";
-		txduration = ENM3CommandErr;
-	}
-	else if (no_bytes == 0) {
-		std::cout << "\n*****\nError: Timed out waiting for modem response.\n*****\n";
-		txduration = ENM3TimeoutErr;
-	}
 	else {
-		std::cout << "\n*****\nError: Modem received unexpected message.\n*****\n";
-		txduration = ENM3UnexpectedErr;
+		txduration = ErrorCheck(rxbuf[0], no_bytes);
 	}
 
 	CloseHandle(hCom);
@@ -378,13 +337,8 @@ int64_t Modem::UnicastListen(char* message) {
 			rxtime = ENoErr;
 		}
 	}
-	else if (no_bytes == 0) {
-		std::cout << "\n*****\nError: Timed out waiting for modem response.\n*****\n";
-		rxtime = ENM3TimeoutErr;
-	}
 	else {
-		std::cout << "\n*****\nError: Modem received unexpected message.\n*****\n";
-		rxtime = ENM3UnexpectedErr;
+		rxtime = ErrorCheck(rxbuf[0], no_bytes);
 	}
 
 	CloseHandle(hCom);
@@ -461,20 +415,33 @@ int64_t Modem::SysTimeCommon(char& flag, char commandchar) {
 		PrintChars(&rxbuf[0], no_bytes);
 		sscanf_s(rxbuf, "#XT%c%14llu\r\n", &flag, 1, &systime);      //retrieve time from local response
 	}
-	else if ((rxbuf[0] == 'E')) {
-		PrintChars(&rxbuf[0], no_bytes);
-		std::cout << "\n*****\nError: Modem given unrecognised command.\n*****\n";
-		systime = ENM3CommandErr;
-	}
-	else if (no_bytes == 0) {
-		std::cout << "\n*****\nError: Timed out waiting for modem response.\n*****\n";
-		systime = ENM3TimeoutErr;
-	}
 	else {
-		std::cout << "\n*****\nError: Modem received unexpected message.\n*****\n";
-		systime = ENM3UnexpectedErr;
+		systime = ErrorCheck(rxbuf[0], no_bytes);
 	}
 
 	CloseHandle(hCom);
 	return(systime);
+}
+
+
+//**************************************************************************************************
+//*** Function to perform error checks on received bytes
+//**************************************************************************************************
+
+int64_t Modem::ErrorCheck(char firstbyte, int64_t numbytes) {
+	int64_t result;
+	if (firstbyte == 'E') {
+		PrintChars(&firstbyte, numbytes);
+		std::cout << "\n*****\nError: Modem given unrecognised command.\n*****\n";
+		result = ENM3CommandErr;
+	}
+	else if (numbytes == 0) {
+		std::cout << "\n*****\nError: Timed out waiting for modem response.\n*****\n";
+		result = ENM3TimeoutErr;
+	}
+	else {
+		std::cout << "\n*****\nError: Modem received unexpected message.\n*****\n";
+		result = ENM3UnexpectedErr;
+	}
+	return(result);
 }
