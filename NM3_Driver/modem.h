@@ -1,8 +1,8 @@
 #pragma once
 
 #include<windows.h>
-#include "io.h"
 #include "chirp.h"
+#include "logger.h"
 
 //**************************************************************************************************
 //*** List of enums for error control and function declaration for printing a message
@@ -49,14 +49,19 @@ public:
 
 	int64_t UnicastListen(char* message);
 
+	void PrintLogs();
+
+	void ClearLogs();
+
 private:
 
 	wchar_t port_[9] = { L"\\\\.\\COM3" };	// default COM3
 	const uint16_t baudrate_ = 9600;	// default 9600
 	HANDLE hCom_;
 	DCB dcb_;
-	COMMTIMEOUTS listentimeout_ = { 0,0,60000,0,0 }, localtimeout_ = { 0,0,100,0,0 }, remotetimeout_ = { 0,0,4500,0,0 };  // listen timesout after a minute
+	COMMTIMEOUTS listentimeout_ = { 0,0,60000,0,0 }, localtimeout_ = { 0,0,200,0,0 }, remotetimeout_ = { 0,0,4500,0,0 };  // listen timesout after a minute
 	char rxbuf_[1000], commandstring_[100];            // define rx and command buffers
+	Logger seriallog_;
 
 	int64_t ConfigureSerial();
 

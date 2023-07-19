@@ -30,10 +30,7 @@
     <ClCompile Include="chirp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="io.h">
-      <Filter>Header Files</Filter>
-    </ClCompile>
-    <ClCompile Include="io.cpp">
+    <ClCompile Include="logger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -42,6 +39,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="maths.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="logger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

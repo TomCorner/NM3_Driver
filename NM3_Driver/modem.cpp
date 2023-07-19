@@ -37,6 +37,7 @@ void PrintError(ErrNum error) {
 
 Modem::Modem(wchar_t portnum) {
 	port_[7] = portnum;
+	seriallog_.Clear();
 }
 
 //**************************************************************************************************
@@ -49,27 +50,26 @@ int64_t Modem::Ping(uint16_t address) {
 	int64_t propagation = ConfigureSerial();
 	if (propagation < 0) return propagation;
 
-	sprintf_s(commandstring_, "$P%03u", address);               // create command
-	std::cout << "Command: " << commandstring_ << "\n";        // display command
+	sprintf_s(commandstring_, "$P%03u", address);	// create command
+	seriallog_.Append(&commandstring_[0]);			// store command in logs
 
 	SetCommTimeouts(hCom_, &localtimeout_);               //timeouts for local response
 	WriteFile(hCom_, commandstring_, 5, &no_bytes, NULL);       //send command to modem
 	ReadFile(hCom_, rxbuf_, 7, &no_bytes, NULL);          //read local response
 
 	if ((no_bytes == 7) && (rxbuf_[0] == '$')) {         // check modem response to ping command
-
-		PrintChars(&rxbuf_[0], no_bytes);
+		seriallog_.Append(&rxbuf_[0]);					// store received bytes in logs
 		SetCommTimeouts(hCom_, &remotetimeout_);          //timeouts for acoustic response
 		ReadFile(hCom_, rxbuf_, 13, &no_bytes, NULL);     //read response or time out after 4.5 s
 
 		if ((no_bytes == 13) && (rxbuf_[0] == '#') && (rxbuf_[1] == 'R') && (rxbuf_[5] == 'T') && (rxbuf_[11] == '\r') && (rxbuf_[12] == '\n')) { // check acoustic response is correct format
-			PrintChars(&rxbuf_[0], no_bytes);
+			seriallog_.Append(&rxbuf_[0]);			// store received bytes in logs
 			//decode packet
 			sscanf_s(rxbuf_, "#R%3huT%5llu\r\n", &TmpAddress, &propagation);    // retrieve adress and propagation time from acknowledgement
 			if (TmpAddress != address) propagation = ENM3UnexpectedErr;                    // incorrect address
 		}
 		else {                                  // no acoustic response - timeout
-			PrintChars(&rxbuf_[0], no_bytes);
+			seriallog_.Append(&rxbuf_[0]);		// store received bytes in logs
 			propagation = ErrorCheck(no_bytes);
 		}
 	}
@@ -140,14 +140,14 @@ int64_t Modem::Unicast(uint16_t address, char message[], uint16_t messagelength,
 		commandlength = 22 + messagelength;
 		sprintf_s(commandstring_, "$U%03u%02u%sT%014llu", address, messagelength, message, txtime);  // create command
 	}
-	std::cout << "Command: " << commandstring_ << "\n";                                    // display command
+	seriallog_.Append(&commandstring_[0]);		// store command in logs
 
 	SetCommTimeouts(hCom_, &localtimeout_);                                           //timeouts for local response
 	WriteFile(hCom_, commandstring_, commandlength, &no_bytes, NULL);                       //send command to modem
 	ReadFile(hCom_, rxbuf_, 9, &no_bytes, NULL);                                      //read local response
 
 	if ((no_bytes == 9) && (rxbuf_[0] == '$') && (rxbuf_[1] == 'U')) {
-		PrintChars(&rxbuf_[0], no_bytes);
+		seriallog_.Append(&rxbuf_[0]);			// store received bytes in logs
 		txduration = int(((0.105 + ((messagelength + 16.0) * 2.0 * 50.0 / 8000.0)) * 1000) + 0.5);
 	}
 	else {
@@ -177,26 +177,25 @@ int64_t Modem::UnicastWithAck(uint16_t address, char message[], uint16_t message
 		commandlength = 22 + messagelength;
 		sprintf_s(commandstring_, "$M%03u%02u%sT%014llu", address, messagelength, message, txtime);  // create command
 	}
-	std::cout << "Command: " << commandstring_ << "\n";                                    // display command
+	seriallog_.Append(&commandstring_[0]);			// store command in logs
 
 	SetCommTimeouts(hCom_, &localtimeout_);               //timeouts for local response
 	WriteFile(hCom_, commandstring_, 12, &no_bytes, NULL);       //send command to modem
 	ReadFile(hCom_, rxbuf_, 9, &no_bytes, NULL);          //read local response
 
 	if ((no_bytes == 9) && (rxbuf_[0] == '$')) {         // check modem response to ping command
-
-		PrintChars(&rxbuf_[0], no_bytes);
+		seriallog_.Append(&rxbuf_[0]);						// store received bytes in logs
 		SetCommTimeouts(hCom_, &remotetimeout_);          //timeouts for acoustic response
 		ReadFile(hCom_, rxbuf_, 13, &no_bytes, NULL);     //read response or time out after 4.5 s
 
 		if ((no_bytes == 13) && (rxbuf_[0] == '#') && (rxbuf_[1] == 'R') && (rxbuf_[5] == 'T') && (rxbuf_[11] == '\r') && (rxbuf_[12] == '\n')) { // check acoustic response is correct format
-			PrintChars(&rxbuf_[0], no_bytes);
+			seriallog_.Append(&rxbuf_[0]);				// store received bytes in logs
 			//decode packet
 			sscanf_s(rxbuf_, "#R%3huT%5llu\r\n", &TmpAddress, &propagation);    // retrieve adress and propagation time from acknowledgement
 			if (TmpAddress != address) propagation = ENM3UnexpectedErr;                    // incorrect address
 		}
 		else {                                  // no acoustic response - timeout
-			PrintChars(&rxbuf_[0], no_bytes);
+			seriallog_.Append(&rxbuf_[0]);			// store received bytes in logs
 			propagation = ErrorCheck(no_bytes);
 		}
 	}
@@ -226,14 +225,14 @@ int64_t Modem::Broadcast(char message[], uint16_t messagelength, uint64_t txtime
 		commandlength = 19 + messagelength;
 		sprintf_s(commandstring_, "$B%02u%sT%014llu", messagelength, message, txtime);  // create command
 	}
-	std::cout << "Command: " << commandstring_ << "\n";                                    // display command
+	seriallog_.Append(&commandstring_[0]);		// store command in logs
 
 	SetCommTimeouts(hCom_, &localtimeout_);                                           //timeouts for local response
 	WriteFile(hCom_, commandstring_, commandlength, &no_bytes, NULL);                       //send command to modem
 	ReadFile(hCom_, rxbuf_, 6, &no_bytes, NULL);                                      //read local response
 
 	if ((no_bytes == 6) && (rxbuf_[0] == '$') && (rxbuf_[1] == 'B')) {
-		PrintChars(&rxbuf_[0], no_bytes);
+		seriallog_.Append(&rxbuf_[0]);			// store received bytes in logs
 		txduration = int(((0.105 + ((messagelength + 16.0) * 2.0 * 50.0 / 8000.0)) * 1000) + 0.5);
 	}
 	else {
@@ -262,14 +261,14 @@ int64_t Modem::Probe(uint16_t chirprepetitions, Chirp chirpinfo, uint64_t txtime
 		commandlength = 23;
 		sprintf_s(commandstring_, "$XP%c%c%02u%cT%014llu", chirpinfo.GetType(), chirpinfo.GetDurationChar(), chirprepetitions, chirpinfo.GetGuardChar(), txtime);  // create command
 	}
-	std::cout << "Command: " << commandstring_ << "\n";                                    // display command
+	seriallog_.Append(&commandstring_[0]);		// store command in logs
 
 	SetCommTimeouts(hCom_, &localtimeout_);                                           //timeouts for local response
 	WriteFile(hCom_, commandstring_, commandlength, &no_bytes, NULL);                       //send command to modem
 	ReadFile(hCom_, rxbuf_, 5, &no_bytes, NULL);                                      //read local response
 
 	if ((no_bytes == 5) && (rxbuf_[0] == '$') && (rxbuf_[1] == 'X') && (rxbuf_[2] == 'P')) {
-		PrintChars(&rxbuf_[0], no_bytes);
+		seriallog_.Append(&rxbuf_[0]);		// store received bytes in logs
 		txduration = chirprepetitions * (chirpinfo.GetGuardVal() + chirpinfo.GetDurationVal()) + chirpinfo.GetDurationVal();
 	}
 	else {
@@ -289,13 +288,13 @@ int64_t Modem::UnicastListen(char* message) {
 	int64_t rxtime = ConfigureSerial();
 	if (rxtime < 0) return rxtime;
 
-	SetCommTimeouts(hCom_, &listentimeout_);                                           //timeouts for local response
-	ReadFile(hCom_, rxbuf_, 26, &no_bytes, NULL);                                      //read local response
+	SetCommTimeouts(hCom_, &listentimeout_);		//timeouts for local response
+	ReadFile(hCom_, rxbuf_, 26, &no_bytes, NULL);	//read local response
 
 	if ((rxbuf_[0] == '#') && (rxbuf_[1] == 'U') && (rxbuf_[2] == '0') && (rxbuf_[3] == '5')) {
-		PrintChars(&rxbuf_[0], no_bytes);
+		seriallog_.Append(&rxbuf_[0]);		// store received bytes in logs
 		//decode packet
-		uint16_t messagelength = 6; // expected length + terminating char
+		uint16_t messagelength = 6;			// expected length + terminating char
 		if (rxbuf_[9] == 'T') {
 			sscanf_s(rxbuf_, "#U05%[^T]T%14llu\r\n", message, messagelength, &rxtime);
 		}
@@ -310,6 +309,22 @@ int64_t Modem::UnicastListen(char* message) {
 
 	CloseHandle(hCom_);
 	return(rxtime);
+}
+
+//**************************************************************************************************
+//*** Function to print the serial logs
+//**************************************************************************************************
+
+void Modem::PrintLogs() {
+	seriallog_.PrintToScreen();
+}
+
+//**************************************************************************************************
+//*** Function to clear the serial logs
+//**************************************************************************************************
+
+void Modem::ClearLogs() {
+	seriallog_.Clear();
 }
 
 //**************************************************************************************************
@@ -334,7 +349,7 @@ int64_t Modem::ConfigureSerial() {
 		return(EGetDCBErr);
 	}
 
-	dcb_.BaudRate = baudrate_;                                         //for Nanomodem (via RS232)
+	dcb_.BaudRate = baudrate_;	//for Nanomodem (via RS232)
 	dcb_.ByteSize = 8;
 	dcb_.Parity = NOPARITY;
 	dcb_.StopBits = ONESTOPBIT;
@@ -357,16 +372,16 @@ int64_t Modem::SysTimeCommon(char& flag, char commandchar) {
 	int64_t systime = ConfigureSerial();
 	if (systime < 0) return(systime);
 
-	sprintf_s(commandstring_, "$XT%c", commandchar);                         // create command
-	std::cout << "Command: " << commandstring_ << "\n";        // dsiplay command
+	sprintf_s(commandstring_, "$XT%c", commandchar);	// create command
+	seriallog_.Append(&commandstring_[0]);				// store command in logs
 
 	SetCommTimeouts(hCom_, &localtimeout_);              //timeouts for local response
 	WriteFile(hCom_, commandstring_, 4, &no_bytes, NULL);      //send command to modem
 	ReadFile(hCom_, rxbuf_, 20, &no_bytes, NULL);        //read local response
 
 	if ((no_bytes == 20) && (rxbuf_[0] == '#') && (rxbuf_[1] == 'X') && (rxbuf_[2] == 'T') && (rxbuf_[18] == '\r') && (rxbuf_[19] == '\n')) { // check local response is correct format
-		PrintChars(&rxbuf_[0], no_bytes);
-		sscanf_s(rxbuf_, "#XT%c%14llu\r\n", &flag, 1, &systime);      //retrieve time from local response
+		seriallog_.Append(&rxbuf_[0]);								// store received bytes in logs
+		sscanf_s(rxbuf_, "#XT%c%14llu\r\n", &flag, 1, &systime);	//retrieve time from local response
 	}
 	else {
 		systime = ErrorCheck(no_bytes);
