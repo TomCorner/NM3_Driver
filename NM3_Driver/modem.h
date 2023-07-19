@@ -5,7 +5,7 @@
 #include "chirp.h"
 
 //**************************************************************************************************
-//*** List of enums for error control
+//*** List of enums for error control and function declaration for printing a message
 //**************************************************************************************************
 
 enum ErrNum {
@@ -17,6 +17,8 @@ enum ErrNum {
 	ENM3TimeoutErr = -5,	// Timed out waiting for modem response
 	ENM3UnexpectedErr = -6	// Modem received unexpected message
 };
+
+void PrintError(ErrNum error);
 
 //**************************************************************************************************
 //*** Class for configuring serial port and sending commands to a Nanomodem
@@ -50,11 +52,15 @@ public:
 private:
 
 	wchar_t port_[9] = { L"\\\\.\\COM3" };	// default COM3
-	const uint16_t baudrate_ = 9600;	// default 9600	
+	const uint16_t baudrate_ = 9600;	// default 9600
+	HANDLE hCom_;
+	DCB dcb_;
+	COMMTIMEOUTS listentimeout_ = { 0,0,60000,0,0 }, localtimeout_ = { 0,0,100,0,0 }, remotetimeout_ = { 0,0,4500,0,0 };  // listen timesout after a minute
+	char rxbuf_[1000], commandstring_[100];            // define rx and command buffers
 
-	int64_t ConfigureSerial(HANDLE& hCom, DCB& dcb);
+	int64_t ConfigureSerial();
 
 	int64_t SysTimeCommon(char& flag, char commandchar);
 
-	int64_t ErrorCheck(char firstbyte, int64_t numbytes);
+	int64_t ErrorCheck(int64_t numbytes);
 };

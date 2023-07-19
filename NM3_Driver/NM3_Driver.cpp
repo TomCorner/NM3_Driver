@@ -141,12 +141,7 @@ int main()
 		Test();
 	}
 	else {
-		int64_t err = Alice();
-		if (err < 0) {
-			std::cout << "\n**** Error in execution. See above messages for clarification ****\n";
-		}
-		else {
-			std::cout << "\n**** Programme execution complete ****\n";
-		}
+		int64_t err = Alice();		
+		PrintError(ErrNum(err));
 	}
 }
