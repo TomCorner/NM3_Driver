@@ -5,9 +5,8 @@
 #define PROPTIMECOUNTHZ 16000 // propagation time is a 16kHz counter
 
 #define ALICEDELAYMS 100    // in ms
-#define BOBDELAYMS 1300     // in ms
+#define BOBDELAYMS 1500     // in ms
 
-#include <iostream>
 #include "modem.h"
 #include "maths.h"
 #include "chirp.h"
@@ -83,7 +82,8 @@ int64_t Alice() {
 		alice.PrintLogs();
 		return txdurationms;
 	}
-	std::this_thread::sleep_for(std::chrono::milliseconds(uint64_t(CounterToMs(probetxtime - unicasttxtime, SYSTIMECLOCKHZ)) + txdurationms)); // wait for probe to be sent
+	//std::this_thread::sleep_for(std::chrono::milliseconds(uint64_t(CounterToMs(probetxtime - unicasttxtime, SYSTIMECLOCKHZ)) + txdurationms)); // wait for probe to be sent
+	this_thread::sleep_for(milliseconds(BOBDELAYMS + txdurationms)); // wait for probe to be sent
 
 	// ****** disable system time
 	systime = alice.SysTimeDisable(systimeflag);
@@ -130,7 +130,7 @@ int64_t Bob() {
 		bob.PrintLogs();
 		return txdurationms;
 	}
-	std::this_thread::sleep_for(std::chrono::milliseconds(BOBDELAYMS + txdurationms)); // wait for probe to be sent
+	this_thread::sleep_for(milliseconds(BOBDELAYMS + txdurationms)); // wait for probe to be sent
 
 	// ****** disable system time
 	systime = bob.SysTimeDisable(systimeflag);
@@ -142,7 +142,7 @@ int64_t Bob() {
 
 void Test() {
 	steady_clock::time_point t1 = steady_clock::now();
-	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	this_thread::sleep_for(milliseconds(500));
 	steady_clock::time_point t2 = steady_clock::now();
 	duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
 	double diff = time_span.count();
