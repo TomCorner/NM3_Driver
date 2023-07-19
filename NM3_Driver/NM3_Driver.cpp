@@ -79,7 +79,7 @@ int64_t Alice() {
 	// ****** Schedule probe signal to bob    
 	txdurationms = alice.Probe(nrepetitions, chirpinfo, probetxtime);
 	if (txdurationms < 0) return txdurationms;
-	std::this_thread::sleep_for(std::chrono::milliseconds(ALICEDELAYMS + txdurationms)); // wait for probe to be sent
+	std::this_thread::sleep_for(std::chrono::milliseconds(uint64_t(CounterToMs(probetxtime - unicasttxtime, SYSTIMECLOCKHZ)) + txdurationms)); // wait for probe to be sent
 
 	// ****** disable system time
 	systime = alice.SysTimeDisable(systimeflag);
@@ -155,7 +155,7 @@ int main()
 		Test();
 	}
 	else {
-		int64_t err = Bob();
+		int64_t err = Alice();
 		if (err < 0) {
 			std::cout << "\n**** Error in execution. See above messages for clarification ****\n";
 		}
