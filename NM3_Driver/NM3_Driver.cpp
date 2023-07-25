@@ -4,8 +4,10 @@
 #define SYSTIMECLOCKHZ 1000000 // sys time clock at 1MHz
 #define PROPTIMECOUNTHZ 16000 // propagation time is a 16kHz counter
 
-#define ALICEDELAYMS 100    // in ms
-#define BOBDELAYMS 1500     // in ms
+#define ALICEDELAYMS 250    // in ms
+#define BOBDELAYMS 750     // in ms
+#define FSOFFSET 30			// in ms
+#define ALICEUNICASTPREP 7  // in ms - for tx encoding
 
 #include "modem.h"
 #include "maths.h"
@@ -29,23 +31,19 @@ int64_t Alice() {
 
 	Chirp chirpinfo(chirpdurationindex, chirpguardindex, chirptype);
 
-	uint16_t bobaddress = 2;            // Bobs address
+	uint16_t bobaddress = 102;            // Bobs address
 	char messagebob[64];                // unicast configuration message to bob
 	uint16_t messagelength = 0;
 
 	Modem alice(COMportnum);                 // configure alice
 	char systimeflag = 'D';                  // 'E' for enabled or 'D' for disabled
 
-	// ****** enable or clear system time 
-	int64_t systime = alice.SysTimeEnable(systimeflag);
-	if (systime < 0) {
-		alice.PrintLogs();
-		return systime;
-	}
-
 	// ****** Ping bob
 	int64_t twowaytimecount = alice.Ping(bobaddress);
-	if (twowaytimecount < 0) return twowaytimecount;
+	if (twowaytimecount < 0) {
+		alice.PrintLogs();
+		return twowaytimecount;
+	}
 	double onewaytimems = CounterToMs(twowaytimecount, PROPTIMECOUNTHZ) / 2.0;
 	uint16_t nrepetitions = CalculateChirpRepetitions(onewaytimems, epsilon, chirpinfo);
 
@@ -60,8 +58,8 @@ int64_t Alice() {
 		cout << "Error: invalid chirp type. Please enter 'U'/'u' for an up-chirp or 'D'/'d' for a down chirp." << "\n";
 	}
 
-	// ****** Get system time and calculate unicast tx time    
-	systime = alice.SysTimeGet(systimeflag);
+	// ****** enable or clear system time 
+	int64_t systime = alice.SysTimeEnable(systimeflag);
 	if (systime < 0) {
 		alice.PrintLogs();
 		return systime;
@@ -69,12 +67,12 @@ int64_t Alice() {
 	uint64_t unicasttxtime = systime + MsToCounter(ALICEDELAYMS, SYSTIMECLOCKHZ);
 
 	// ****** schedule chirp info message to bob
-	int64_t txdurationms = alice.UnicastWithAck(bobaddress, messagebob, messagelength); // add time later...
+	int64_t txdurationms = alice.UnicastWithAck(bobaddress, messagebob, messagelength, unicasttxtime); // add time later...
 	if (txdurationms < 0) {
 		alice.PrintLogs();
 		return txdurationms;
-	}
-	uint64_t probetxtime = unicasttxtime + MsToCounter(onewaytimems, SYSTIMECLOCKHZ) + MsToCounter(BOBDELAYMS + 30, SYSTIMECLOCKHZ);
+	}	
+	uint64_t probetxtime = (unicasttxtime + MsToCounter(onewaytimems, SYSTIMECLOCKHZ) + MsToCounter(BOBDELAYMS, SYSTIMECLOCKHZ) + MsToCounter(FSOFFSET, SYSTIMECLOCKHZ) + MsToCounter(ALICEUNICASTPREP, SYSTIMECLOCKHZ));
 
 	// ****** Schedule probe signal to bob    
 	txdurationms = alice.Probe(nrepetitions, chirpinfo, probetxtime);
@@ -88,14 +86,14 @@ int64_t Alice() {
 	// ****** disable system time
 	systime = alice.SysTimeDisable(systimeflag);
 	alice.PrintLogs();
-	if (systime < 0) return systime;	
+	if (systime < 0) return systime;
 
 	return ENoErr;
 }
 
 int64_t Bob() {
 	//pass these in as parameters
-	wchar_t COMportnum = L'6';   // check COM port in device manager
+	wchar_t COMportnum = L'7';   // check COM port in device manager
 	char modemtype = 'B';                           // A for Alice, B for Bob
 	//uint16_t epsilon = 5;                             // local ring down guard time in ms (default 5)
 
@@ -120,6 +118,10 @@ int64_t Bob() {
 	// ****** wait for chirp info from Alice and parse message
 	char rxmessage[1000];
 	systime = bob.UnicastListen(rxmessage);
+	if (systime < 0) {
+		bob.PrintLogs();
+		return systime;
+	}
 	sscanf_s(rxmessage, "%c%c%2hu%c", &chirptype, 1, &chirpdurationindex, 1, &nrepetitions, &chirpguardindex, 1);
 	Chirp chirpinfo(chirpdurationindex, chirpguardindex, chirptype);
 
