@@ -1,7 +1,9 @@
 #pragma once
 
-#include <vector>
+#include <fstream>
 #include <iostream>
+#include <vector>
+#include "maths.h"
 
 using namespace std;
 
@@ -12,6 +14,8 @@ using namespace std;
 class Logger
 {
 public:
+	Logger(char type);
+
 	void Append(char* start);
 
 	void Clear();
@@ -22,4 +26,9 @@ public:
 
 private:
 	vector<char> buf_;
+	char filename_[50];
+
+	void SetFileName(char type);
+
+	void CreateTextFile();
 };
