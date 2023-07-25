@@ -35,9 +35,8 @@ void PrintError(ErrNum error) {
 //*** Modem class constructor
 //**************************************************************************************************
 
-Modem::Modem(wchar_t portnum) {
+Modem::Modem(wchar_t portnum, char type) : seriallog_(type) {
 	port_[7] = portnum;
-	seriallog_.Clear();
 }
 
 //**************************************************************************************************
@@ -309,13 +308,7 @@ int64_t Modem::UnicastListen(char* message) {
 
 void Modem::PrintLogs() {
 	seriallog_.PrintToScreen();
-}
-
-//**************************************************************************************************
-//*** Function to clear the serial logs
-//**************************************************************************************************
-
-void Modem::ClearLogs() {
+	seriallog_.PrintToFile();
 	seriallog_.Clear();
 }
 

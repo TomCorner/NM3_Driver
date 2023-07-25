@@ -27,7 +27,7 @@ void PrintError(ErrNum error);
 class Modem
 {
 public:
-	Modem(wchar_t portnum);
+	Modem(wchar_t portnum, char type);
 
 	int64_t Ping(uint16_t Address);
 
@@ -50,8 +50,6 @@ public:
 	int64_t UnicastListen(char* message);
 
 	void PrintLogs();
-
-	void ClearLogs();
 
 private:
 
