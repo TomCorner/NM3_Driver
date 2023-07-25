@@ -59,7 +59,7 @@ private:
 	const uint16_t baudrate_ = 9600;	// default 9600
 	HANDLE hCom_;
 	DCB dcb_;
-	COMMTIMEOUTS listentimeout_ = { 0,0,60000,0,0 }, localtimeout_ = { 0,0,200,0,0 }, remotetimeout_ = { 0,0,4500,0,0 };  // listen timesout after a minute
+	COMMTIMEOUTS listentimeout_ = { 0,0,60000,0,0 }, localtimeout_ = { 0,0,100,0,0 }, remotetimeout_ = { 0,0,4500,0,0 };  // listen timesout after a minute
 	char rxbuf_[1000], commandstring_[100];            // define rx and command buffers
 	Logger seriallog_;
 

@@ -50,11 +50,11 @@ int64_t Modem::Ping(uint16_t address) {
 	int64_t propagation = ConfigureSerial();
 	if (propagation < 0) return propagation;
 
-	sprintf_s(commandstring_, "$P%03u", address);	// create command
+	DWORD commandlength = sprintf_s(commandstring_, "$P%03u", address);	// create command
 	seriallog_.Append(&commandstring_[0]);			// store command in logs
 
 	SetCommTimeouts(hCom_, &localtimeout_);               //timeouts for local response
-	WriteFile(hCom_, commandstring_, 5, &no_bytes, NULL);       //send command to modem
+	WriteFile(hCom_, commandstring_, commandlength, &no_bytes, NULL);       //send command to modem
 	ReadFile(hCom_, rxbuf_, 7, &no_bytes, NULL);          //read local response
 
 	if ((no_bytes == 7) && (rxbuf_[0] == '$')) {         // check modem response to ping command
@@ -133,12 +133,10 @@ int64_t Modem::Unicast(uint16_t address, char message[], uint16_t messagelength,
 
 	DWORD commandlength = 0;
 	if (txtime == 0) {
-		commandlength = 7 + messagelength;
-		sprintf_s(commandstring_, "$U%03u%02u%s", address, messagelength, message);  // create command
+		commandlength = sprintf_s(commandstring_, "$U%03u%02u%s", address, messagelength, message);  // create command
 	}
 	else {
-		commandlength = 22 + messagelength;
-		sprintf_s(commandstring_, "$U%03u%02u%sT%014llu", address, messagelength, message, txtime);  // create command
+		commandlength = sprintf_s(commandstring_, "$U%03u%02u%sT%014llu", address, messagelength, message, txtime);  // create command
 	}
 	seriallog_.Append(&commandstring_[0]);		// store command in logs
 
@@ -170,17 +168,15 @@ int64_t Modem::UnicastWithAck(uint16_t address, char message[], uint16_t message
 
 	DWORD commandlength = 0;
 	if (txtime == 0) {
-		commandlength = 7 + messagelength;
-		sprintf_s(commandstring_, "$M%03u%02u%s", address, messagelength, message);  // create command
+		commandlength = sprintf_s(commandstring_, "$M%03u%02u%s", address, messagelength, message);  // create command
 	}
 	else {
-		commandlength = 22 + messagelength;
-		sprintf_s(commandstring_, "$M%03u%02u%sT%014llu", address, messagelength, message, txtime);  // create command
+		commandlength = sprintf_s(commandstring_, "$M%03u%02u%sT%014llu", address, messagelength, message, txtime);  // create command
 	}
 	seriallog_.Append(&commandstring_[0]);			// store command in logs
 
 	SetCommTimeouts(hCom_, &localtimeout_);               //timeouts for local response
-	WriteFile(hCom_, commandstring_, 12, &no_bytes, NULL);       //send command to modem
+	WriteFile(hCom_, commandstring_, commandlength, &no_bytes, NULL);       //send command to modem
 	ReadFile(hCom_, rxbuf_, 9, &no_bytes, NULL);          //read local response
 
 	if ((no_bytes == 9) && (rxbuf_[0] == '$')) {         // check modem response to ping command
@@ -218,12 +214,10 @@ int64_t Modem::Broadcast(char message[], uint16_t messagelength, uint64_t txtime
 
 	DWORD commandlength = 0;
 	if (txtime == 0) {
-		commandlength = 4 + messagelength;
-		sprintf_s(commandstring_, "$B%02u%s", messagelength, message);  // create command
+		commandlength = sprintf_s(commandstring_, "$B%02u%s", messagelength, message);  // create command
 	}
 	else {
-		commandlength = 19 + messagelength;
-		sprintf_s(commandstring_, "$B%02u%sT%014llu", messagelength, message, txtime);  // create command
+		commandlength = sprintf_s(commandstring_, "$B%02u%sT%014llu", messagelength, message, txtime);  // create command
 	}
 	seriallog_.Append(&commandstring_[0]);		// store command in logs
 
@@ -254,12 +248,10 @@ int64_t Modem::Probe(uint16_t chirprepetitions, Chirp chirpinfo, uint64_t txtime
 
 	DWORD commandlength = 0;
 	if (txtime == 0) {
-		commandlength = 8;
-		sprintf_s(commandstring_, "$XP%c%c%02u%c", chirpinfo.GetType(), chirpinfo.GetDurationChar(), chirprepetitions, chirpinfo.GetGuardChar());  // create command
+		commandlength = sprintf_s(commandstring_, "$XP%c%c%02u%c", chirpinfo.GetType(), chirpinfo.GetDurationChar(), chirprepetitions, chirpinfo.GetGuardChar());  // create command
 	}
 	else {
-		commandlength = 23;
-		sprintf_s(commandstring_, "$XP%c%c%02u%cT%014llu", chirpinfo.GetType(), chirpinfo.GetDurationChar(), chirprepetitions, chirpinfo.GetGuardChar(), txtime);  // create command
+		commandlength = sprintf_s(commandstring_, "$XP%c%c%02u%cT%014llu", chirpinfo.GetType(), chirpinfo.GetDurationChar(), chirprepetitions, chirpinfo.GetGuardChar(), txtime);  // create command
 	}
 	seriallog_.Append(&commandstring_[0]);		// store command in logs
 
@@ -372,11 +364,11 @@ int64_t Modem::SysTimeCommon(char& flag, char commandchar) {
 	int64_t systime = ConfigureSerial();
 	if (systime < 0) return(systime);
 
-	sprintf_s(commandstring_, "$XT%c", commandchar);	// create command
+	DWORD commandlength = sprintf_s(commandstring_, "$XT%c", commandchar);	// create command
 	seriallog_.Append(&commandstring_[0]);				// store command in logs
 
 	SetCommTimeouts(hCom_, &localtimeout_);              //timeouts for local response
-	WriteFile(hCom_, commandstring_, 4, &no_bytes, NULL);      //send command to modem
+	WriteFile(hCom_, commandstring_, commandlength, &no_bytes, NULL);      //send command to modem
 	ReadFile(hCom_, rxbuf_, 20, &no_bytes, NULL);        //read local response
 
 	if ((no_bytes == 20) && (rxbuf_[0] == '#') && (rxbuf_[1] == 'X') && (rxbuf_[2] == 'T') && (rxbuf_[18] == '\r') && (rxbuf_[19] == '\n')) { // check local response is correct format
@@ -401,7 +393,7 @@ int64_t Modem::ErrorCheck(int64_t numbytes) {
 	if (rxbuf_[0] == 'E') {
 		result = ENM3CommandErr;
 	}
-	else if (numbytes == 0) {
+	else if ((numbytes == 0) || ((rxbuf_[1] == 'T') && (rxbuf_[2] == 'O'))) {
 		result = ENM3TimeoutErr;
 	}
 	else {
