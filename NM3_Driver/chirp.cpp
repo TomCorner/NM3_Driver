@@ -5,9 +5,9 @@
 //*** Chirp class constructor
 //**************************************************************************************************
 
-Chirp::Chirp(char duration, char guard, char type): durationindex_(duration),
-													guard_(guard),
-													type_(type){}
+Chirp::Chirp(char duration, char guard, char type) : durationindex_(duration),
+guard_(guard),
+type_(type) {}
 
 //**************************************************************************************************
 //*** Function to return the char value for duration index
