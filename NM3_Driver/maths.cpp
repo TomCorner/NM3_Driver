@@ -5,6 +5,7 @@
 //**************************************************************************************************
 
 uint16_t CalculateChirpRepetitions(double tao, uint16_t epsilon, Chirp chirpinfo) {
+	if (tao < 10.0) return 0;
 	double eps = (double)epsilon;	// cast values to doubles before division
 	double duration = (double)chirpinfo.GetDurationVal();
 	double guard = (double)chirpinfo.GetGuardVal();
@@ -25,5 +26,5 @@ double CounterToMs(uint64_t count, uint64_t clock) {
 //**************************************************************************************************
 
 uint64_t MsToCounter(double ms, uint64_t clock) {
-	return (int)((ms * (double)clock)/1000.0);
+	return (int)((ms * (double)clock) / 1000.0);
 }
