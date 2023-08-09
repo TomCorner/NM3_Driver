@@ -5,12 +5,19 @@
 //**************************************************************************************************
 
 uint16_t CalculateChirpRepetitions(double tao, uint16_t epsilon, Chirp chirpinfo) {
-	if (tao < 10.0) return 0;
 	double eps = (double)epsilon;	// cast values to doubles before division
 	double duration = (double)chirpinfo.GetDurationVal();
 	double guard = (double)chirpinfo.GetGuardVal();
-	uint16_t n_repititions = (uint16_t)((tao - eps - duration) / (duration + guard)); // calculate number of repitions using decided formula
-	return (n_repititions > 99) ? (uint16_t)99 : n_repititions;	// return number of repitions, capped at 99
+	int16_t n_repititions = (uint16_t)((tao - eps - duration) / (duration + guard)); // calculate number of repitions using decided formula
+	if (n_repititions < 0) {
+		return 0;
+	}
+	else if (n_repititions > 99) {
+		return 99;
+	}
+	else {
+		return n_repititions;
+	}
 }
 
 //**************************************************************************************************
