@@ -27,6 +27,18 @@ void Logger::Append(char* start) {
 }
 
 //**************************************************************************************************
+//*** Function to append an error message for the provided error enum
+//**************************************************************************************************
+
+void Logger::AppendError(ErrNum err) {
+	string message = GetErrorMessage(err);
+	string::iterator it;
+	for (it = message.begin(); it != message.end(); it++) {
+		buf_.push_back(*it);
+	}
+}
+
+//**************************************************************************************************
 //*** Function to clear the log
 //**************************************************************************************************
 
@@ -78,10 +90,10 @@ void Logger::SetFileName(char type) {
 	localtime_s(&now, &t);
 
 	if ((type == 'A') || (type == 'a')) {
-		sprintf_s(filename_, "%02u%02u%02u_%04u%02u%02u_Alice_log.txt", now.tm_hour, now.tm_min, now.tm_sec, now.tm_year + 1900, now.tm_mon + 1, now.tm_mday);
+		sprintf_s(filename_, "%04u%02u%02u_%02u%02u%02u_Alice_log.txt", now.tm_year + 1900, now.tm_mon + 1, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec);
 	}
 	else {
-		sprintf_s(filename_, "%02u%02u%02u_%04u%02u%02u_Bob_log.txt", now.tm_hour, now.tm_min, now.tm_sec, now.tm_year + 1900, now.tm_mon + 1, now.tm_mday);
+		sprintf_s(filename_, "%02u%02u%02u_%04u%02u%02u_Bob_log.txt", now.tm_year + 1900, now.tm_mon + 1, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec);
 	}
 
 }
@@ -92,4 +104,34 @@ void Logger::SetFileName(char type) {
 
 void Logger::CreateTextFile() {
 	ofstream o(filename_);
+}
+
+//**************************************************************************************************
+//*** Function to return error message based on enum
+//**************************************************************************************************
+string Logger::GetErrorMessage(ErrNum error) {
+	switch (error) {
+	case ECOMErr:
+		return "\n***** Error: Cannot open Modem COM port *****\n";
+		break;
+	case EGetDCBErr:
+		return "\n***** Error: Cannot get DCB for Modem COM port *****\n";
+		break;
+	case ESetDCBErr:
+		return "\n***** Error: Cannot set DCB for Modem COM port *****\n";
+		break;
+	case ENM3CommandErr:
+		return "\n***** Error: Modem given unrecognised command *****\n";
+		break;
+	case ENM3TimeoutErr:
+		return "\n***** Error: Timed out waiting for modem response *****\n";
+		break;
+	case ENM3UnexpectedErr:
+		return "\n***** Error: Modem received unexpected message *****\n";
+		break;
+	case ENoErr:
+	default:
+		return "\n**** Cycle execution complete ****\n";
+		break;
+	}
 }
