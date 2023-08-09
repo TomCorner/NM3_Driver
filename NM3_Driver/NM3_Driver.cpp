@@ -5,7 +5,7 @@
 #define PROPTIMECOUNTHZ 16000 // propagation time is a 16kHz counter
 
 #define ALICEDELAYMS 250    // in ms
-#define BOBDELAYMS 750     // in ms
+#define BOBDELAYMS 2000     // in ms
 #define FSOFFSET 30			// in ms
 #define ALICEUNICASTPREP 7  // in ms - for tx encoding
 
@@ -28,10 +28,10 @@ int64_t Alice(Modem alice, uint16_t epsilon, Chirp chirpinfo) {
 	// ****** Ping bob
 	int64_t twowaytimecount = alice.Ping(bobaddress);
 	if (twowaytimecount < 0) {
-		alice.PrintLogs();
+		alice.PrintLogs(ErrNum(twowaytimecount));
 		return twowaytimecount;
 	}
-	double onewaytimems = CounterToMs(twowaytimecount, PROPTIMECOUNTHZ) / 2.0;
+	double onewaytimems = CounterToMs(twowaytimecount, PROPTIMECOUNTHZ);
 	uint16_t nrepetitions = CalculateChirpRepetitions(onewaytimems, epsilon, chirpinfo);
 
 	// ****** prepare Chirp message
@@ -48,23 +48,25 @@ int64_t Alice(Modem alice, uint16_t epsilon, Chirp chirpinfo) {
 	// ****** enable or clear system time 
 	int64_t systime = alice.SysTimeEnable(systimeflag);
 	if (systime < 0) {
-		alice.PrintLogs();
+		alice.PrintLogs(ErrNum(systime));
 		return systime;
 	}
 	uint64_t unicasttxtime = systime + MsToCounter(ALICEDELAYMS, SYSTIMECLOCKHZ);
 
 	// ****** schedule chirp info message to bob
-	int64_t txdurationms = alice.UnicastWithAck(bobaddress, messagebob, messagelength, unicasttxtime); // add time later...
+	int64_t txdurationms = alice.Unicast(bobaddress, messagebob, messagelength, unicasttxtime); // add time later...
 	if (txdurationms < 0) {
-		alice.PrintLogs();
+		alice.PrintLogs(ErrNum(txdurationms));
 		return txdurationms;
 	}
-	uint64_t probetxtime = (unicasttxtime + MsToCounter(onewaytimems, SYSTIMECLOCKHZ) + MsToCounter(BOBDELAYMS, SYSTIMECLOCKHZ) + MsToCounter(FSOFFSET, SYSTIMECLOCKHZ) + MsToCounter(ALICEUNICASTPREP, SYSTIMECLOCKHZ));
+	this_thread::sleep_for(milliseconds(ALICEDELAYMS + txdurationms)); // wait for Unicast to be sent
+
+	uint64_t probetxtime = (unicasttxtime + MsToCounter(onewaytimems + BOBDELAYMS + FSOFFSET + ALICEUNICASTPREP, SYSTIMECLOCKHZ));
 
 	// ****** Schedule probe signal to bob    
 	txdurationms = alice.Probe(nrepetitions, chirpinfo, probetxtime);
 	if (txdurationms < 0) {
-		alice.PrintLogs();
+		alice.PrintLogs(ErrNum(txdurationms));
 		return txdurationms;
 	}
 	//std::this_thread::sleep_for(std::chrono::milliseconds(uint64_t(CounterToMs(probetxtime - unicasttxtime, SYSTIMECLOCKHZ)) + txdurationms)); // wait for probe to be sent
@@ -72,10 +74,8 @@ int64_t Alice(Modem alice, uint16_t epsilon, Chirp chirpinfo) {
 
 	// ****** disable system time
 	systime = alice.SysTimeDisable(systimeflag);
-	alice.PrintLogs();
-	if (systime < 0) return systime;
-
-	return ENoErr;
+	alice.PrintLogs(ErrNum(systime));
+	return systime;
 }
 
 int64_t Bob(Modem bob) {
@@ -89,7 +89,7 @@ int64_t Bob(Modem bob) {
 	// ****** enable or clear system time 
 	int64_t systime = bob.SysTimeEnable(systimeflag);
 	if (systime < 0) {
-		bob.PrintLogs();
+		bob.PrintLogs(ErrNum(systime));
 		return systime;
 	}
 
@@ -97,7 +97,7 @@ int64_t Bob(Modem bob) {
 	char rxmessage[1000];
 	systime = bob.UnicastListen(rxmessage);
 	if (systime < 0) {
-		bob.PrintLogs();
+		bob.PrintLogs(ErrNum(systime));
 		return systime;
 	}
 	sscanf_s(rxmessage, "%c%c%2hu%c", &chirptype, 1, &chirpdurationindex, 1, &nrepetitions, &chirpguardindex, 1);
@@ -107,43 +107,40 @@ int64_t Bob(Modem bob) {
 	uint64_t probetxtime = systime + MsToCounter(BOBDELAYMS, SYSTIMECLOCKHZ);
 	int64_t txdurationms = bob.Probe(nrepetitions, chirpinfo, probetxtime);
 	if (txdurationms < 0) {
-		bob.PrintLogs();
+		bob.PrintLogs(ErrNum(txdurationms));
 		return txdurationms;
 	}
 	this_thread::sleep_for(milliseconds(BOBDELAYMS + txdurationms)); // wait for probe to be sent
 
 	// ****** disable system time
 	systime = bob.SysTimeDisable(systimeflag);
-	bob.PrintLogs();
-	if (systime < 0) return systime;
-
-	return ENoErr;
+	bob.PrintLogs(ErrNum(systime));
+	return systime;
 }
 
 int main()
 {
-	char type = 'A';
+	char type = 'B';
 	int64_t err = 0;
 
 	if ((type == 'a') || (type == 'A')) {
 		//pass these in as parameters
 		wchar_t COMportnum = L'3';  // check COM port in device manager
 		char modemtype = 'A';		// A for Alice, B for Bob
-		uint16_t epsilon = 5;       // local ring down guard time in ms (default 5)
+		uint16_t epsilon = 0;       // local ring down guard time in ms (default 5)
 		Modem alice(COMportnum, modemtype);	// configure alice
 
 		// these parameters are optional
-		char chirpdurationindex = '1';	// duration index - see chirp.cpp for values (default 1)
-		char chirpguardindex = '1';     // guard index - see chirp.cpp for values    (default 1)
+		char chirpdurationindex = '0';	// duration index - see chirp.cpp for values (default 1)
+		char chirpguardindex = '0';     // guard index - see chirp.cpp for values    (default 1)
 		char chirptype = 'U';			// Alice up (U), bob down (D)
 		Chirp chirpinfo(chirpdurationindex, chirpguardindex, chirptype);
 
 		while (1) {
 			err = Alice(alice, epsilon, chirpinfo);
-			PrintError(ErrNum(err));
 			this_thread::sleep_for(milliseconds(3000)); // wait for probe to be sent
 		}
-		
+
 	}
 	else if ((type == 'b') || (type == 'B')) {
 		//pass these in as parameters
@@ -153,12 +150,9 @@ int main()
 
 		while (1) {
 			err = Bob(bob);
-			PrintError(ErrNum(err));
-		}		
+		}
 	}
 	else {
 		return -1;
 	}
-
-
 }
