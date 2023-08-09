@@ -1,37 +1,6 @@
 #include "modem.h"
 
 //**************************************************************************************************
-//*** Function to print an error message based on its enum value
-//**************************************************************************************************
-
-void PrintError(ErrNum error) {
-	switch (error) {
-	case ECOMErr:
-		std::cout << "\n*****\nError: Cannot open Modem COM port.\n*****\n";
-		break;
-	case EGetDCBErr:
-		std::cout << "\n*****\nError: Cannot get DCB for Modem COM port.\n*****\n";
-		break;
-	case ESetDCBErr:
-		std::cout << "\n*****\nError: Cannot set DCB for Modem COM port.\n*****\n";
-		break;
-	case ENM3CommandErr:
-		std::cout << "\n*****\nError: Modem given unrecognised command.\n*****\n";
-		break;
-	case ENM3TimeoutErr:
-		std::cout << "\n*****\nError: Timed out waiting for modem response.\n*****\n";
-		break;
-	case ENM3UnexpectedErr:
-		std::cout << "\n*****\nError: Modem received unexpected message.\n*****\n";
-		break;
-	case ENoErr:
-	default:
-		std::cout << "\n**** Programme execution complete ****\n";
-		break;
-	}
-}
-
-//**************************************************************************************************
 //*** Modem class constructor
 //**************************************************************************************************
 
@@ -306,7 +275,8 @@ int64_t Modem::UnicastListen(char* message) {
 //*** Function to print the serial logs
 //**************************************************************************************************
 
-void Modem::PrintLogs() {
+void Modem::PrintLogs(ErrNum err) {
+	seriallog_.AppendError(err);
 	seriallog_.PrintToScreen();
 	seriallog_.PrintToFile();
 	seriallog_.Clear();
