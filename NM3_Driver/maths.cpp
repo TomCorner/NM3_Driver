@@ -4,7 +4,7 @@
 //*** Function to calculate the number of chirps that can fit into a propagation delay
 //**************************************************************************************************
 
-uint16_t CalculateChirpRepetitions(double tao, uint16_t epsilon, Chirp chirpinfo) {
+uint16_t CalculateChirpRepetitions(double tao, uint32_t epsilon, Chirp chirpinfo) {
 	double eps = (double)epsilon;	// cast values to doubles before division
 	double duration = (double)chirpinfo.GetDurationVal();
 	double guard = (double)chirpinfo.GetGuardVal();
