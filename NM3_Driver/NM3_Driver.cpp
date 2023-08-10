@@ -10,6 +10,7 @@
 #define ALICEUNICASTPREP 7  // in ms - for tx encoding
 
 #include "chirp.h"
+#include "cmd_parse.h"
 #include "maths.h"
 #include "modem.h"
 #include <chrono>
@@ -18,7 +19,7 @@
 using namespace std;
 using namespace std::chrono;
 
-int64_t Alice(Modem alice, uint16_t epsilon, Chirp chirpinfo) {
+int64_t Alice(Modem alice, uint32_t epsilon, Chirp chirpinfo) {
 
 	uint16_t bobaddress = 102;		// Bobs address
 	char messagebob[64];			// unicast configuration message to bob
@@ -26,7 +27,7 @@ int64_t Alice(Modem alice, uint16_t epsilon, Chirp chirpinfo) {
 	char systimeflag = 'D';             // 'E' for enabled or 'D' for disabled
 
 	// ****** Ping bob
-	int64_t twowaytimecount = alice.Ping(bobaddress);
+	int64_t twowaytimecount = alice.Ping(bobaddress);	// CURRENTLY REPORTING ONE WAY TIME
 	if (twowaytimecount < 0) {
 		alice.PrintLogs(ErrNum(twowaytimecount));
 		return twowaytimecount;
@@ -118,35 +119,61 @@ int64_t Bob(Modem bob) {
 	return systime;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
-	char type = 'B';
-	int64_t err = 0;
+	char** argument_list = &argv[0];
+	int64_t err = ArgumentCheck(argc, argument_list); // checks number of arguments is correct
+	if (err < 0) return -1;
 
-	if ((type == 'a') || (type == 'A')) {
-		//pass these in as parameters
-		wchar_t COMportnum = L'3';  // check COM port in device manager
-		char modemtype = 'A';		// A for Alice, B for Bob
-		uint16_t epsilon = 0;       // local ring down guard time in ms (default 5)
-		Modem alice(COMportnum, modemtype);	// configure alice
+	char modem_type;
+	err = ParseType(argument_list, modem_type);
+	if (err < 0) return -1;
 
-		// these parameters are optional
-		char chirpdurationindex = '0';	// duration index - see chirp.cpp for values (default 1)
-		char chirpguardindex = '0';     // guard index - see chirp.cpp for values    (default 1)
+
+	if ((modem_type == 'a') || (modem_type == 'A')) {
+		wchar_t COMportnum;
+		err = ParsePortNumber(argument_list, COMportnum);	// parses com port number
+		if (err < 0) return -1;
+		Modem alice(COMportnum, modem_type);	// configure alice modem
+
+		cout << endl << "Alice configured to COM port " << COMportnum - '0' << endl;
+
+		uint32_t epsilon;
+		err = ParseEpsilon(argument_list, epsilon);	// parses ring down guard
+		if (err < 0) return -1;
+
+		char chirp_duration_index;
+		err = ParseChirpDuration(argument_list, chirp_duration_index);	// parses and checks chirp duration
+		if (err < 0) return -1;
+
+		char chirp_guard_index;
+		err = ParseChirpGuard(argument_list, chirp_guard_index);	// parses and checks chirp guard
+		if (err < 0) return -1;
+
 		char chirptype = 'U';			// Alice up (U), bob down (D)
-		Chirp chirpinfo(chirpdurationindex, chirpguardindex, chirptype);
+		Chirp chirpinfo(chirp_duration_index, chirp_guard_index, chirptype);	// configures chirp
+		
+		cout << endl << "- Alice Probe signal -" << endl;
+		cout << "Chirp Type(Up / Down) : " << chirpinfo.GetType() << endl;
+		cout << "Chirp Duration : " << chirpinfo.GetDurationVal() << "ms" << endl;
+		cout << "Chirp Guard : " << chirpinfo.GetGuardVal() << "ms" << endl;
+		cout << "Ringdown guard (epsilon): " << epsilon << "ms" << endl;
 
 		while (1) {
-			err = Alice(alice, epsilon, chirpinfo);
-			this_thread::sleep_for(milliseconds(3000)); // wait for probe to be sent
+			err = Alice(alice, epsilon, chirpinfo);	// execute probe cycle
+			if (err < 0) return -1;
+			this_thread::sleep_for(milliseconds(3000)); // arbitrary delay until next cycle
 		}
 
 	}
-	else if ((type == 'b') || (type == 'B')) {
-		//pass these in as parameters
-		wchar_t COMportnum = L'7';	// check COM port in device manager
-		char modemtype = 'B';		// A for Alice, B for Bob
-		Modem bob(COMportnum, modemtype);	// configure bob
+	else if ((modem_type == 'b') || (modem_type == 'B')) {
+		wchar_t COMportnum;
+		err = ParsePortNumber(argument_list, COMportnum);
+		if (err < 0) return -1;
+		Modem bob(COMportnum, modem_type);	// configure bob
+
+		cout << endl <<"Bob configured to COM port " << COMportnum - '0' << endl;
+		cout << "Waiting for Alice..." << endl;
 
 		while (1) {
 			err = Bob(bob);

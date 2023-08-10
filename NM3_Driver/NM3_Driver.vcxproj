@@ -129,12 +129,14 @@
   <ItemGroup>
     <ClCompile Include="chirp.cpp" />
     <ClCompile Include="chirp.h" />
+    <ClCompile Include="cmd_parse.cpp" />
     <ClCompile Include="logger.cpp" />
     <ClCompile Include="maths.cpp" />
     <ClCompile Include="modem.cpp" />
     <ClCompile Include="NM3_Driver.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cmd_parse.h" />
     <ClInclude Include="logger.h" />
     <ClInclude Include="maths.h" />
     <ClInclude Include="modem.h" />
