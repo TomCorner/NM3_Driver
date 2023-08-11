@@ -39,7 +39,7 @@ int16_t ArgumentCheck(int argc, char** argv) {
 //**************************************************************************************************
 
 int16_t ParseType(char** argv, char& type) {
-	sscanf_s(argv[1], "%c,", &type, 1);
+	sscanf_s(argv[1], "%c", &type, 1);
 
 	if ((type == 'A') || (type == 'a') || (type == 'B') || (type == 'b')) {
 		return 0;
@@ -56,7 +56,7 @@ int16_t ParseType(char** argv, char& type) {
 
 int16_t ParsePortNumber(char** argv, wchar_t& port_number) {
 	char input_pnum;
-	sscanf_s(argv[2], "%c,", &input_pnum, 1);
+	sscanf_s(argv[2], "%c", &input_pnum, 1);
 	port_number = input_pnum;
 	return 0;
 }
@@ -66,7 +66,7 @@ int16_t ParsePortNumber(char** argv, wchar_t& port_number) {
 //**************************************************************************************************
 
 int16_t ParseEpsilon(char** argv, uint32_t& epsilon) {
-	sscanf_s(argv[3], "%u,", &epsilon);
+	sscanf_s(argv[3], "%u", &epsilon);
 	if (epsilon > 1000) {
 		cout << endl << "Error: Ring down guard (epsilon) needs to be between 0 and 1000ms" << endl << endl;
 	}
@@ -80,7 +80,7 @@ int16_t ParseEpsilon(char** argv, uint32_t& epsilon) {
 int16_t ParseChirpDuration(char** argv, char& chirp_duration_index) {
 	uint16_t result = 0;
 	uint32_t duration_test;
-	sscanf_s(argv[4], "%u,", &duration_test);
+	sscanf_s(argv[4], "%u", &duration_test);
 	switch (duration_test)
 	{
 	case 2:
@@ -125,7 +125,7 @@ int16_t ParseChirpDuration(char** argv, char& chirp_duration_index) {
 int16_t ParseChirpGuard(char** argv, char& chirp_guard_index) {
 	uint16_t result = 0;
 	uint32_t guard_test;
-	sscanf_s(argv[5], "%u,", &guard_test);
+	sscanf_s(argv[5], "%u", &guard_test);
 	switch (guard_test)
 	{
 	case 0:
