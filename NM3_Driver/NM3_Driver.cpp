@@ -27,16 +27,16 @@ int64_t Alice(Modem alice, uint32_t epsilon, Chirp chirpinfo) {
 	char systimeflag = 'D';             // 'E' for enabled or 'D' for disabled
 
 	// ****** Ping bob
-	int64_t twowaytimecount = alice.Ping(bobaddress);	// CURRENTLY REPORTING ONE WAY TIME
+	int64_t twowaytimecount = alice.Ping(bobaddress);
 	if (twowaytimecount < 0) {
 		alice.PrintLogs(ErrNum(twowaytimecount));
 		return twowaytimecount;
 	}
-	double onewaytimems = CounterToMs(twowaytimecount, PROPTIMECOUNTHZ);
+	double onewaytimems = CounterToMs(twowaytimecount, PROPTIMECOUNTHZ) / 2.0;
 	uint16_t nrepetitions = CalculateChirpRepetitions(onewaytimems, epsilon, chirpinfo);
 
 	// ****** prepare Chirp message
-	if (chirpinfo.GetType() == 'U' || chirpinfo.GetType() == 'u') {	// TODO - Add this to command line parameter checks as well
+	if (chirpinfo.GetType() == 'U' || chirpinfo.GetType() == 'u') {
 		messagelength = sprintf_s(messagebob, "%c%c%02u%c", 'D', chirpinfo.GetDurationChar(), nrepetitions, chirpinfo.GetGuardChar());  // create message
 	}
 	else if (chirpinfo.GetType() == 'D' || chirpinfo.GetType() == 'd') {
@@ -152,7 +152,7 @@ int main(int argc, char* argv[])
 
 		char chirptype = 'U';			// Alice up (U), bob down (D)
 		Chirp chirpinfo(chirp_duration_index, chirp_guard_index, chirptype);	// configures chirp
-		
+
 		cout << endl << "- Alice Probe signal -" << endl;
 		cout << "Chirp Type(Up / Down) : " << chirpinfo.GetType() << endl;
 		cout << "Chirp Duration : " << chirpinfo.GetDurationVal() << "ms" << endl;
@@ -161,7 +161,6 @@ int main(int argc, char* argv[])
 
 		while (1) {
 			err = Alice(alice, epsilon, chirpinfo);	// execute probe cycle
-			if (err < 0) return -1;
 			this_thread::sleep_for(milliseconds(3000)); // arbitrary delay until next cycle
 		}
 
@@ -172,7 +171,7 @@ int main(int argc, char* argv[])
 		if (err < 0) return -1;
 		Modem bob(COMportnum, modem_type);	// configure bob
 
-		cout << endl <<"Bob configured to COM port " << COMportnum - '0' << endl;
+		cout << endl << "Bob configured to COM port " << COMportnum - '0' << endl;
 		cout << "Waiting for Alice..." << endl;
 
 		while (1) {
