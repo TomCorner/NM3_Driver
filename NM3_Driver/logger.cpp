@@ -93,7 +93,7 @@ void Logger::SetFileName(char type) {
 		sprintf_s(filename_, "%04u%02u%02u_%02u%02u%02u_Alice_log.txt", now.tm_year + 1900, now.tm_mon + 1, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec);
 	}
 	else {
-		sprintf_s(filename_, "%02u%02u%02u_%04u%02u%02u_Bob_log.txt", now.tm_year + 1900, now.tm_mon + 1, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec);
+		sprintf_s(filename_, "%02u%02u%02u_%02u%02u%02u_Bob_log.txt", now.tm_year + 1900, now.tm_mon + 1, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec);
 	}
 
 }
